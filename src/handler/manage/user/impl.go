@@ -61,6 +61,7 @@ func SuperUserRegister(u *CommonUserPost) common.Resp {
 		return common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.ER_USER_REGUSTER))
 	}
 	u.Password = lib.DjangoEncrypt(u.Password, string(lib.GetRandom()))
+	u.CoreAccount.IsRecorder = 2
 	model.DB().Create(&u.CoreAccount)
 	model.DB().Create(&model.CoreGrained{Username: u.Username, Group: lib.EmptyGroup()})
 	return common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.USER_REGUSTER_SUCCESS))

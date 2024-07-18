@@ -40,6 +40,7 @@ func DataInit(o *engine.AuditRole, other *model.Other, ldap *model.Ldap, message
 		Password:   lib.DjangoEncrypt("Yearning_admin", string(lib.GetRandom())),
 		Department: "DBA",
 		Email:      "",
+		IsRecorder: 2,
 	})
 	model.DB().Debug().Create(&model.CoreGlobalConfiguration{
 		Authorization: "global",

@@ -49,6 +49,7 @@ func UserLdapLogin(c yee.Context) (err error) {
 				Password:   lib.DjangoEncrypt(lib.GenWorkid(), string(lib.GetRandom())),
 				Department: ldap.Department,
 				Email:      ldap.Email,
+				IsRecorder: 2,
 			})
 			ix, _ := json.Marshal([]string{})
 			model.DB().Create(&model.CoreGrained{Username: u.Username, Group: ix})
