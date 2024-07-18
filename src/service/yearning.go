@@ -25,6 +25,12 @@ import (
 	"net/http"
 )
 
+//go:embed chat/*
+var chatf embed.FS
+
+//go:embed chat/server/app/index.html
+var chatindex string
+
 //go:embed dist/*
 var f embed.FS
 
@@ -37,6 +43,7 @@ func loadDBInit() {
 	_ = json.Unmarshal(model.GloPer.Ldap, &model.GloLdap)
 	_ = json.Unmarshal(model.GloPer.Other, &model.GloOther)
 	_ = json.Unmarshal(model.GloPer.AuditRole, &model.GloRole)
+	_ = json.Unmarshal(model.GloPer.AI, &model.GloAI)
 }
 
 func StartYearning(port string) {
@@ -45,6 +52,7 @@ func StartYearning(port string) {
 	loadDBInit()
 	e := yee.New()
 	e.Pack("/front", f, "dist")
+	e.Pack("/_next", chatf, "chat")
 	e.Use(middleware.Cors())
 	e.Use(middleware.Logger())
 	e.Use(middleware.Secure())
@@ -53,6 +61,9 @@ func StartYearning(port string) {
 		Level: 9,
 	}))
 	e.SetLogLevel(model.TransferLogLevel())
+	e.GET("/chatbot", func(c yee.Context) error {
+		return c.HTML(http.StatusOK, chatindex)
+	})
 	e.GET("/", func(c yee.Context) error {
 		return c.HTML(http.StatusOK, html)
 	})

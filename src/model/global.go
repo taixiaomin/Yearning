@@ -85,6 +85,8 @@ var GloLdap Ldap
 
 var GloOther Other
 
+var GloAI AI
+
 var GloMessage Message
 
 var GloRole engine.AuditRole

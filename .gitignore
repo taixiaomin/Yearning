@@ -100,7 +100,7 @@ ENV/
 
 # mkdocs documentation
 /site
-
+src/service/chat/*
 # mypy
 .mypy_cache/
 .idea/*.xml

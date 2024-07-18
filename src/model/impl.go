@@ -1,12 +1,14 @@
 package model
 
 import (
+	"Yearning-go/src/lib/enc"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/cookieY/yee/logger"
 	"gopkg.in/ldap.v3"
+	"gorm.io/gorm"
 )
 
 type ALdap struct {
@@ -77,4 +79,22 @@ func (l *ALdap) LdapConnect(user string, pass string, isTest bool) (isOk bool, e
 	}
 
 	return true, nil
+}
+
+func (s *CoreDataSource) ConnectDB(schema string) (*gorm.DB, error) {
+	ps := enc.Decrypt(JWT, s.Password)
+	if ps == "" {
+		return nil, errors.New("连接失败,密码解析错误！")
+	}
+
+	return NewDBSub(DSN{
+		Username: s.Username,
+		Password: ps,
+		Host:     s.IP,
+		Port:     s.Port,
+		DBName:   schema,
+		CA:       s.CAFile,
+		Cert:     s.Cert,
+		Key:      s.KeyFile,
+	})
 }

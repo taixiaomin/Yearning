@@ -4,6 +4,7 @@ import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
 	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/enc"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"github.com/google/uuid"
@@ -47,8 +48,8 @@ func ConnTest(u *model.CoreDataSource) error {
 
 func SuperEditSource(source *model.CoreDataSource) common.Resp {
 
-	if source.Password != "" && lib.Decrypt(model.JWT, source.Password) == "" {
-		model.DB().Model(&model.CoreDataSource{}).Where("source_id =?", source.SourceId).Updates(&model.CoreDataSource{Password: lib.Encrypt(source.Password)})
+	if source.Password != "" && enc.Decrypt(model.JWT, source.Password) == "" {
+		model.DB().Model(&model.CoreDataSource{}).Where("source_id =?", source.SourceId).Updates(&model.CoreDataSource{Password: enc.Encrypt(model.JWT, source.Password)})
 	}
 	model.DB().Model(&model.CoreDataSource{}).Where("source_id =?", source.SourceId).Updates(map[string]interface{}{
 		"id_c":               source.IDC,
@@ -88,7 +89,7 @@ func SuperEditSource(source *model.CoreDataSource) common.Resp {
 }
 
 func SuperCreateSource(source *model.CoreDataSource) common.Resp {
-	source.Password = lib.Encrypt(source.Password)
+	source.Password = enc.Encrypt(model.JWT, source.Password)
 	if source.Password != "" {
 		source.SourceId = uuid.New().String()
 		model.DB().Create(source)

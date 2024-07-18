@@ -17,6 +17,7 @@ import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
 	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/enc"
 	"Yearning-go/src/model"
 	"github.com/cookieY/yee"
 	"net/http"
@@ -81,8 +82,8 @@ func ManageDBCreateOrEdit(c yee.Context) (err error) {
 	case "create":
 		return c.JSON(http.StatusOK, SuperCreateSource(&u.DB))
 	case "test":
-		if u.DB.Password != "" && lib.Decrypt(model.JWT, u.DB.Password) != "" {
-			u.DB.Password = lib.Decrypt(model.JWT, u.DB.Password)
+		if u.DB.Password != "" && enc.Decrypt(model.JWT, u.DB.Password) != "" {
+			u.DB.Password = enc.Decrypt(model.JWT, u.DB.Password)
 		}
 		return c.JSON(http.StatusOK, SuperTestDBConnect(&u.DB))
 	}
