@@ -423,12 +423,12 @@ func FetchSQLAdvisor(c yee.Context) (err error) {
 	if err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 	}
-	adv, err := New(u, tables, "advisor")
+	adv, err := NewAIAgent()
 	if err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 
 	}
-	resp, err := adv.Go()
+	resp, err := adv.BuildSQLAdvise(u, tables, "advisor")
 	if err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 	}
@@ -444,12 +444,12 @@ func Text2SQL(c yee.Context) (err error) {
 	if err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 	}
-	adv, err := New(u, tables, "text2sql")
+	adv, err := NewAIAgent()
 	if err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 
 	}
-	resp, err := adv.Go()
+	resp, err := adv.BuildSQLAdvise(u, tables, "text2sql")
 	if err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 	}

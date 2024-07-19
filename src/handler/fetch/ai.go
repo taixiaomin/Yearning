@@ -3,31 +3,16 @@ package fetch
 import (
 	"Yearning-go/src/lib"
 	"Yearning-go/src/model"
-	"fmt"
-	"github.com/cookieY/yee/logger"
-	"github.com/go-resty/resty/v2"
+	"context"
+	"github.com/sashabaranov/go-openai"
+	"net/http"
+	"net/url"
 	"strings"
 )
 
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-type ChatRequest struct {
-	Model            string    `json:"model"`
-	FrequencyPenalty float32   `json:"frequency_penalty"`
-	MaxTokens        int       `json:"max_tokens"`
-	Messages         []Message `json:"messages"`
-	PresencePenalty  float32   `json:"presence_penalty"`
-	Temperature      float32   `json:"temperature"`
-	TopP             float32   `json:"top_p"`
-	Stream           bool      `json:"stream"`
-}
-
-type chatResponse struct {
-	Choices []struct {
-		Message Message `json:"message"`
-	} `json:"choices"`
+type AIAssistant struct {
+	cc  *openai.Client
+	req openai.ChatCompletionRequest
 }
 
 func replace(sql, kind string, tables []string) string {
@@ -41,44 +26,61 @@ func replace(sql, kind string, tables []string) string {
 	return p
 }
 
-func New(prompt *advisorFrom, tables []string, kind string) (*ChatRequest, error) {
-	sql, err := lib.GetFingerprint(prompt.SQL)
-	if err != nil {
-		return nil, err
-	}
-	return &ChatRequest{
+func NewAIAgent() (*AIAssistant, error) {
+	ai := new(AIAssistant)
+	ai.req = openai.ChatCompletionRequest{
 		Model:            model.GloAI.Model,
-		FrequencyPenalty: model.GloAI.FrequencyPenalty,
 		MaxTokens:        model.GloAI.MaxTokens,
-		Messages: []Message{
-			{
-				Role:    "system",
-				Content: replace(sql, kind, tables),
-			},
-		},
-		PresencePenalty: model.GloAI.PresencePenalty,
-		Temperature:     model.GloAI.Temperature,
-		TopP:            model.GloAI.TopP,
-	}, nil
+		Temperature:      model.GloAI.Temperature,
+		PresencePenalty:  model.GloAI.PresencePenalty,
+		FrequencyPenalty: model.GloAI.FrequencyPenalty,
+		TopP:             model.GloAI.TopP,
+	}
+	config := openai.DefaultConfig(model.GloAI.APIKey)
+	if model.GloAI.ProxyURL != "" {
+		proxyUrl, err := url.Parse(model.GloAI.ProxyURL)
+		if err != nil {
+			return nil, err
+		}
+		transport := &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		}
+		config.HTTPClient = &http.Client{
+			Transport: transport,
+		}
+	}
+	ai.cc = openai.NewClientWithConfig(config)
+	return ai, nil
 }
 
-func (c *ChatRequest) Go() (string, error) {
-	var result chatResponse
-	cc := resty.New()
-	if model.GloAI.ProxyURL != "" {
-		cc.SetProxy(model.GloAI.ProxyURL)
+func (ai *AIAssistant) Messages(messages []openai.ChatCompletionMessage) *AIAssistant {
+	ai.req.Messages = messages
+	return ai
+}
 
-	}
-	resp, err := cc.R().SetDebug(true).SetBody(c).SetAuthToken(model.GloAI.APIKey).SetResult(&result).Post(fmt.Sprintf("%s/v1/chat/completions", model.GloAI.BaseUrl))
+func (ai *AIAssistant) BuildSQLAdvise(prompt *advisorFrom, tables []string, kind string) (string, error) {
+	sql, err := lib.GetFingerprint(prompt.SQL)
 	if err != nil {
 		return "", err
 	}
-	logger.DefaultLogger.Debug(resp.String())
-	logger.DefaultLogger.Debug(result)
-	var res string
-	for _, choice := range result.Choices {
-		res += choice.Message.Content
-		fmt.Println(choice)
+	ai.req.Messages = []openai.ChatCompletionMessage{
+		{
+			Role:    "system",
+			Content: replace(sql, kind, tables),
+		},
 	}
-	return res, nil
+	resp, e := ai.cc.CreateChatCompletion(context.Background(), ai.req)
+	if e != nil {
+		return "", e
+	}
+	return resp.Choices[0].Message.Content, nil
+}
+
+func (ai *AIAssistant) StreamChatCompletion() (*openai.ChatCompletionStream, error) {
+	ai.req.Stream = true
+	stream, err := ai.cc.CreateChatCompletionStream(context.Background(), ai.req)
+	if err != nil {
+		return nil, err
+	}
+	return stream, nil
 }
