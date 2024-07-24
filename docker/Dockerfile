@@ -1,4 +1,4 @@
-ARG BASEIMAGES=3.17
+ARG BASEIMAGES=3.20.2
 FROM alpine:${BASEIMAGES} AS builder
 
 LABEL maintainer="chaiyd <chaiyd.cn@gmail.com>,henryyee <henry@yearning.io>"
@@ -32,6 +32,13 @@ COPY --from=builder /opt/conf.toml /opt/conf.toml
 WORKDIR /opt/
 
 EXPOSE 8000
+
+ENV Y_LANG = "zh-CN"
+ENV SECRET_KEY = "dbcjqheupqjsuwsm"
+ENV MYSQL_ADDR = ""
+ENV MYSQL_USER = ""
+ENV MYSQL_PASSWORD = ""
+ENV MYSQL_DB = ""
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["/opt/Yearning", "run"]

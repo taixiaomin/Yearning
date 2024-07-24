@@ -12,6 +12,7 @@ docker run -d -it \
            -e MYSQL_ADDR=10.0.0.3:3306 \
            -e MYSQL_PASSWORD=123123 \
            -e MYSQL_DB=Yearning \
+           -e Y_LANG=zh_CN or en_US \
            yeelabs/yearning
 ```
 
