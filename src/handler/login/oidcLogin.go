@@ -149,6 +149,7 @@ func getAccount(code string, sessionState string) (ac *model.CoreAccount, err er
 			Password:   lib.DjangoEncrypt(lib.GenWorkid(), string(lib.GetRandom())),
 			Department: "",
 			Email:      email,
+			IsRecorder: 2,
 		}
 		model.DB().Create(&coreAccount)
 		ix, _ := json.Marshal([]string{})

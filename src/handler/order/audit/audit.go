@@ -73,46 +73,39 @@ func DelayKill(c yee.Context) (err error) {
 func FetchAuditOrder(c yee.Context) (err error) {
 	websocket.Handler(func(ws *websocket.Conn) {
 		defer ws.Close()
-		valid, err := lib.WSTokenIsValid(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
-		if err != nil {
-			c.Logger().Error(err)
-			return
-		}
-		if valid {
-			var u common.PageList[[]model.CoreSqlOrder]
-			var b []byte
-			for {
-				if err := websocket.Message.Receive(ws, &b); err != nil {
-					if err != io.EOF {
-						c.Logger().Error(err)
-					}
-					break
-				}
-				if string(b) == "ping" {
-					continue
-				}
-				if err := json.Unmarshal(b, &u); err != nil {
+		var u common.PageList[[]model.CoreSqlOrder]
+		var b []byte
+		for {
+			if err := websocket.Message.Receive(ws, &b); err != nil {
+				if err != io.EOF {
 					c.Logger().Error(err)
-					break
 				}
-				token, err := lib.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
-				if err != nil {
-					c.Logger().Error(err)
-					break
-				}
-				user := token.Claims.(jwt.MapClaims)["name"].(string)
-				u.Paging().OrderBy("(status = 2) DESC, date DESC").Select(QueryField).Query(common.AccordingToAllOrderState(u.Expr.Status),
-					common.AccordingToAllOrderType(u.Expr.Type),
-					common.AccordingToRelevant(user),
-					common.AccordingToText(u.Expr.Text),
-					common.AccordingToUsername(u.Expr.Username),
-					common.AccordingToDate(u.Expr.Picker),
-					common.AccordingToWorkId(u.Expr.WorkId),
-				)
-				if err = websocket.Message.Send(ws, lib.ToJson(u.ToMessage())); err != nil {
-					c.Logger().Error(err)
-					break
-				}
+				break
+			}
+			if string(b) == "ping" {
+				continue
+			}
+			if err := json.Unmarshal(b, &u); err != nil {
+				c.Logger().Error(err)
+				break
+			}
+			token, err := lib.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
+			if err != nil {
+				c.Logger().Error(err)
+				break
+			}
+			user := token.Claims.(jwt.MapClaims)["name"].(string)
+			u.Paging().OrderBy("(status = 2) DESC, date DESC").Select(QueryField).Query(common.AccordingToAllOrderState(u.Expr.Status),
+				common.AccordingToAllOrderType(u.Expr.Type),
+				common.AccordingToRelevant(user),
+				common.AccordingToText(u.Expr.Text),
+				common.AccordingToUsername(u.Expr.Username),
+				common.AccordingToDate(u.Expr.Picker),
+				common.AccordingToWorkId(u.Expr.WorkId),
+			)
+			if err = websocket.Message.Send(ws, lib.ToJson(u.ToMessage())); err != nil {
+				c.Logger().Error(err)
+				break
 			}
 		}
 	}).ServeHTTP(c.Response(), c.Request())

@@ -2,6 +2,7 @@ package common
 
 import (
 	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/enc"
 	"Yearning-go/src/model"
 	"errors"
 	"fmt"
@@ -20,21 +21,7 @@ func unifiedLabel(col []string) []any {
 
 func ScanDataRows(s model.CoreDataSource, database, sql, meta string, isQuery bool, isLeaf bool) (*_dbInfo, error) {
 	res := new(_dbInfo)
-	ps := lib.Decrypt(model.JWT, s.Password)
-	if ps == "" {
-		return res, errors.New("连接失败,密码解析错误！")
-	}
-
-	db, err := model.NewDBSub(model.DSN{
-		Username: s.Username,
-		Password: ps,
-		Host:     s.IP,
-		Port:     s.Port,
-		DBName:   database,
-		CA:       s.CAFile,
-		Cert:     s.Cert,
-		Key:      s.KeyFile,
-	})
+	db, err := s.ConnectDB(database)
 	if err != nil {
 		return res, err
 	}
@@ -79,7 +66,7 @@ func checkMeta(s, database, flag string) string {
 }
 
 func Highlight(s *model.CoreDataSource, isField string, dbName string) []map[string]string {
-	ps := lib.Decrypt(model.JWT, s.Password)
+	ps := enc.Decrypt(model.JWT, s.Password)
 	var list []map[string]string
 	db, err := model.NewDBSub(model.DSN{
 		Username: s.Username,

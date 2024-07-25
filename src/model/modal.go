@@ -68,6 +68,7 @@ type CoreGlobalConfiguration struct {
 	Stmt          uint   `gorm:"type:tinyint(2) not null default 0" json:"stmt"`
 	AuditRole     JSON   `gorm:"type:json;" json:"audit_role"`
 	Board         string `gorm:"type:longtext" json:"board"`
+	AI            JSON   `gorm:"type:json;" json:"ai"`
 }
 
 type CoreSqlRecord struct {

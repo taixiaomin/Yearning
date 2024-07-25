@@ -19,6 +19,7 @@ import (
 	"Yearning-go/src/handler/manage/tpl"
 	"Yearning-go/src/i18n"
 	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/enc"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"errors"
@@ -241,7 +242,7 @@ func FetchSQLTest(c yee.Context) (err error) {
 			IP:       s.IP,
 			Username: s.Username,
 			Port:     s.Port,
-			Password: lib.Decrypt(model.JWT, s.Password),
+			Password: enc.Decrypt(model.JWT, s.Password),
 			CA:       s.CAFile,
 			Cert:     s.Cert,
 			Key:      s.KeyFile,
@@ -331,26 +332,19 @@ func FetchOrderComment(c yee.Context) (err error) {
 		defer ws.Close()
 		workId := c.QueryParam("work_id")
 		var msg string
-		valid, err := lib.WSTokenIsValid(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
-		if err != nil {
-			c.Logger().Error(err)
-			return
-		}
-		if valid {
-			for {
-				if workId != "" {
-					var comment []model.CoreOrderComment
-					model.DB().Model(model.CoreOrderComment{}).Where("work_id =?", workId).Find(&comment)
-					err := websocket.Message.Send(ws, lib.ToJson(comment))
-					if err != nil {
-						c.Logger().Error(err)
-						break
-					}
-				}
-				if err := websocket.Message.Receive(ws, &msg); err != nil {
-					c.Logger().Debugf("receive error: %v", err)
+		for {
+			if workId != "" {
+				var comment []model.CoreOrderComment
+				model.DB().Model(model.CoreOrderComment{}).Where("work_id =?", workId).Find(&comment)
+				err := websocket.Message.Send(ws, lib.ToJson(comment))
+				if err != nil {
+					c.Logger().Error(err)
 					break
 				}
+			}
+			if err := websocket.Message.Receive(ws, &msg); err != nil {
+				c.Logger().Debugf("receive error: %v", err)
+				break
 			}
 		}
 
@@ -395,25 +389,18 @@ func FetchOrderState(c yee.Context) (err error) {
 		defer ws.Close()
 		workId := c.QueryParam("work_id")
 		var msg string
-		valid, err := lib.WSTokenIsValid(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
-		if err != nil {
-			c.Logger().Error(err)
-			return
-		}
-		if valid {
-			for {
-				if workId != "" {
-					var order model.CoreSqlOrder
-					model.DB().Model(model.CoreSqlOrder{}).Select("status").Where("work_id =?", workId).First(&order)
-					err := websocket.Message.Send(ws, lib.ToJson(order.Status))
-					if err != nil {
-						c.Logger().Error(err)
-						break
-					}
-				}
-				if err := websocket.Message.Receive(ws, &msg); err != nil {
+		for {
+			if workId != "" {
+				var order model.CoreSqlOrder
+				model.DB().Model(model.CoreSqlOrder{}).Select("status").Where("work_id =?", workId).First(&order)
+				err := websocket.Message.Send(ws, lib.ToJson(order.Status))
+				if err != nil {
+					c.Logger().Error(err)
 					break
 				}
+			}
+			if err := websocket.Message.Receive(ws, &msg); err != nil {
+				break
 			}
 		}
 	}).ServeHTTP(c.Response(), c.Request())
@@ -425,4 +412,46 @@ func FetchUserInfo(c yee.Context) (err error) {
 	var userInfo model.CoreAccount
 	model.DB().Select("department,username,real_name,email").Model(model.CoreAccount{}).Where("username =?", t.Username).First(&userInfo)
 	return c.JSON(http.StatusOK, common.SuccessPayload(userInfo))
+}
+
+func FetchSQLAdvisor(c yee.Context) (err error) {
+	u := new(advisorFrom)
+	if err := c.Bind(u); err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
+	}
+	tables, err := u.Go()
+	if err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
+	}
+	adv, err := NewAIAgent()
+	if err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
+
+	}
+	resp, err := adv.BuildSQLAdvise(u, tables, "advisor")
+	if err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
+	}
+	return c.JSON(http.StatusOK, common.SuccessPayload(resp))
+}
+
+func Text2SQL(c yee.Context) (err error) {
+	u := new(advisorFrom)
+	if err := c.Bind(u); err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
+	}
+	tables, err := u.Go()
+	if err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
+	}
+	adv, err := NewAIAgent()
+	if err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
+
+	}
+	resp, err := adv.BuildSQLAdvise(u, tables, "text2sql")
+	if err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
+	}
+	return c.JSON(http.StatusOK, common.SuccessPayload(resp))
 }

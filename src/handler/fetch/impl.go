@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"Yearning-go/src/handler/common"
-	"Yearning-go/src/lib"
 	"Yearning-go/src/model"
 	"fmt"
 )
@@ -35,22 +34,43 @@ type _FetchBind struct {
 	Hide     bool               `json:"hide"`
 }
 
+type advisorFrom struct {
+	SourceID string   `json:"source_id"`
+	Schema   string   `json:"data_base"`
+	Tables   []string `json:"tables"`
+	SQL      string   `json:"sql"`
+	Desc     string   `json:"desc"`
+}
+
+type ShowCreateTable struct {
+	CreateTable string `gorm:"column:Create Table"`
+}
+
+func (a *advisorFrom) Go() (tables []string, err error) {
+	var dataSource model.CoreDataSource
+	model.DB().Model(model.CoreDataSource{}).Where("source_id =?", a.SourceID).First(&dataSource)
+	db, err := dataSource.ConnectDB(a.Schema)
+	if err != nil {
+		return nil, err
+	}
+	defer model.Close(db)
+	for _, i := range a.Tables {
+		var result ShowCreateTable
+		err = db.Raw(fmt.Sprintf("SHOW CREATE TABLE %s.%s", a.Schema, i)).Scan(&result).Error
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute query: %v", err)
+		}
+		tables = append(tables, result.CreateTable)
+	}
+	return tables, nil
+}
+
 func (u *_FetchBind) FetchTableFieldsOrIndexes() error {
 	var s model.CoreDataSource
 
 	model.DB().Where("source_id =?", u.SourceId).First(&s)
 
-	ps := lib.Decrypt(model.JWT, s.Password)
-	db, err := model.NewDBSub(model.DSN{
-		Username: s.Username,
-		Password: ps,
-		Host:     s.IP,
-		Port:     s.Port,
-		DBName:   u.DataBase,
-		CA:       s.CAFile,
-		Cert:     s.Cert,
-		Key:      s.KeyFile,
-	})
+	db, err := s.ConnectDB(u.DataBase)
 	if err != nil {
 		return err
 	}
