@@ -242,7 +242,7 @@ func FetchSQLTest(c yee.Context) (err error) {
 			IP:       s.IP,
 			Username: s.Username,
 			Port:     s.Port,
-			Password: enc.Decrypt(model.JWT, s.Password),
+			Password: enc.Decrypt(model.C.General.SecretKey, s.Password),
 			CA:       s.CAFile,
 			Cert:     s.Cert,
 			Key:      s.KeyFile,

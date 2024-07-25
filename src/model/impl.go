@@ -82,7 +82,7 @@ func (l *ALdap) LdapConnect(user string, pass string, isTest bool) (isOk bool, e
 }
 
 func (s *CoreDataSource) ConnectDB(schema string) (*gorm.DB, error) {
-	ps := enc.Decrypt(JWT, s.Password)
+	ps := enc.Decrypt(C.General.SecretKey, s.Password)
 	if ps == "" {
 		return nil, errors.New("连接失败,密码解析错误！")
 	}

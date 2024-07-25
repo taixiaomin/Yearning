@@ -66,7 +66,7 @@ func checkMeta(s, database, flag string) string {
 }
 
 func Highlight(s *model.CoreDataSource, isField string, dbName string) []map[string]string {
-	ps := enc.Decrypt(model.JWT, s.Password)
+	ps := enc.Decrypt(model.C.General.SecretKey, s.Password)
 	var list []map[string]string
 	db, err := model.NewDBSub(model.DSN{
 		Username: s.Username,

@@ -161,7 +161,7 @@ func SocketQueryResults(c yee.Context) (err error) {
 			core := new(queryCore)
 			var u model.CoreDataSource
 			model.DB().Where("source_id =?", args.SourceId).First(&u)
-			core.db, err = sqlx.Connect("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4", u.Username, enc.Decrypt(model.JWT, u.Password), u.IP, u.Port))
+			core.db, err = sqlx.Connect("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4", u.Username, enc.Decrypt(model.C.General.SecretKey, u.Password), u.IP, u.Port))
 			if err != nil {
 				c.Logger().Error(err)
 				_ = websocket.Message.Send(ws, lib.ToMsg(queryResults{Error: err.Error()}))

@@ -82,8 +82,8 @@ func ManageDBCreateOrEdit(c yee.Context) (err error) {
 	case "create":
 		return c.JSON(http.StatusOK, SuperCreateSource(&u.DB))
 	case "test":
-		if u.DB.Password != "" && enc.Decrypt(model.JWT, u.DB.Password) != "" {
-			u.DB.Password = enc.Decrypt(model.JWT, u.DB.Password)
+		if u.DB.Password != "" && enc.Decrypt(model.C.General.SecretKey, u.DB.Password) != "" {
+			u.DB.Password = enc.Decrypt(model.C.General.SecretKey, u.DB.Password)
 		}
 		return c.JSON(http.StatusOK, SuperTestDBConnect(&u.DB))
 	}
