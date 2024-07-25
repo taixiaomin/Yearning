@@ -84,7 +84,7 @@ docker run -d -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USE
 
 [Spug - 开源轻量自动化运维平台](https://github.com/openspug/spug)
 
-<h1 align="center">AI 建议</h1>
+<h1 align="center">AI Advise</h1>
 <p align="center">
 Implementation of SQL statement optimization suggestions and Text 2 SQL features based on a large language model <br /> By default or custom prompt words, AI Assistant can help users optimize SQL statements for better performance. At the same time, the AI assistant also provides text to SQL conversion feat.
 </p>
