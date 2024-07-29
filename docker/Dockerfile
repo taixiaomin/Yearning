@@ -33,7 +33,7 @@ WORKDIR /opt/
 
 EXPOSE 8000
 
-ENV Y_LANG = "zh-CN"
+ENV Y_LANG = "zh_CN"
 ENV SECRET_KEY = "dbcjqheupqjsuwsm"
 ENV MYSQL_ADDR = ""
 ENV MYSQL_USER = ""
