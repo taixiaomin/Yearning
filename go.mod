@@ -23,7 +23,7 @@ require (
 	google.golang.org/grpc v1.62.1
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/ldap.v3 v3.0.3
-	gorm.io/driver/mysql v1.5.2
+	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.11
 )
 
