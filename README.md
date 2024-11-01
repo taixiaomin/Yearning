@@ -26,6 +26,8 @@ English | [简体中文](README.zh-CN.md)
 
 ## Feature
 
+- **AI Assistant** — Our AI assistant provides real-time SQL optimization suggestions, helping users to optimize SQL
+  statements for better performance. The AI assistant also provides text to SQL conversion, allowing users to input
 - **SQL Audit** — Support the creation of SQL audit tickets with approval workflows and automated syntax checkers to
   validate submitted SQL statements for correctness, security, and compliance. Automatically generate rollback
   statements corresponding to the submitted DDL/DML operations for easy recovery when needed. Maintain a comprehensive
@@ -73,14 +75,20 @@ English | [简体中文](README.zh-CN.md)
 
 ```bash
 ## init database
-docker run --rm -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB yeelabs/yearning "/opt/Yearning install"
+docker run --rm -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB -e Y_LANG=zh_CN yeelabs/yearning "/opt/Yearning install"
 ## You must initialize your database in the startup container
-docker run -d -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB yeelabs/yearning
+docker run -d -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB -e Y_LANG=zh_CN yeelabs/yearning
 ```
 
 ## Recommend
 
 [Spug - 开源轻量自动化运维平台](https://github.com/openspug/spug)
+
+<h1 align="center">AI Advise</h1>
+<p align="center">
+Implementation of SQL statement optimization suggestions and Text 2 SQL features based on a large language model <br /> By default or custom prompt words, AI Assistant can help users optimize SQL statements for better performance. At the same time, the AI assistant also provides text to SQL conversion feat.
+</p>
+<img src="img/text2sql.jpg" style="width: 1000px" />
 
 <h1 align="center">Automatic SQL Checker</h1>
 <p align="center">

@@ -100,7 +100,7 @@ ENV/
 
 # mkdocs documentation
 /site
-
+src/service/chat/*
 # mypy
 .mypy_cache/
 .idea/*.xml
@@ -108,3 +108,4 @@ ENV/
 go.sum
 .idea/Yearning.iml
 .idea/inspectionProfiles/Project_Default.xml
+.idea

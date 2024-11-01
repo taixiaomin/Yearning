@@ -58,6 +58,10 @@ func FetchResourceForPut(y yee.Context) (err error) {
 		return fetch.FetchSQLTest(y)
 	case "merge":
 		return fetch.FetchMergeDDL(y)
+	case "advisor":
+		return fetch.FetchSQLAdvisor(y)
+	case "text2sql":
+		return fetch.Text2SQL(y)
 	}
 	return y.JSON(http.StatusOK, "Illegal")
 }

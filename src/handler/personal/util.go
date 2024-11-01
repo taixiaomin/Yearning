@@ -4,6 +4,7 @@ import (
 	"Yearning-go/src/handler/order/audit"
 	"Yearning-go/src/i18n"
 	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/enc"
 	"Yearning-go/src/model"
 	"errors"
 	"github.com/cookieY/yee/logger"
@@ -34,7 +35,7 @@ func CallAutoTask(order *model.CoreSqlOrder, length int) {
 			IP:            source.IP,
 			Port:          source.Port,
 			Username:      source.Username,
-			Password:      lib.Decrypt(model.JWT, source.Password),
+			Password:      enc.Decrypt(model.C.General.SecretKey, source.Password),
 			Message:       model.GloMessage,
 			MaxAffectRows: autoTask.Affectrow,
 		}, &isCall); err != nil {

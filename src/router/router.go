@@ -15,6 +15,7 @@ package router
 
 import (
 	"Yearning-go/src/apis"
+	"Yearning-go/src/handler/fetch"
 	"Yearning-go/src/handler/login"
 	"Yearning-go/src/handler/manage"
 	autoTask2 "Yearning-go/src/handler/manage/autoTask"
@@ -82,7 +83,8 @@ func AddRouter(e *yee.Core) {
 	e.GET("/oidc/_token-login", login.OidcLogin)
 	e.GET("/oidc/state", login.OidcState)
 
-	r := e.Group("/api/v2", middleware.JWTWithConfig(middleware.JwtConfig{SigningKey: []byte(model.JWT)}))
+	r := e.Group("/api/v2", middleware.JWTWithConfig(middleware.JwtConfig{SigningKey: []byte(model.C.General.SecretKey), TokenLookup: []string{yee.HeaderAuthorization, yee.HeaderSecWebSocketProtocol}}))
+	r.POST("/chat", fetch.AiChat)
 	r.Restful("/common/:tp", personal.PersonalRestFulAPis())
 	r.Restful("/dash/:tp", apis.YearningDashApis())
 	r.Restful("/fetch/:tp", apis.YearningFetchApis())

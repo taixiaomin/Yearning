@@ -26,12 +26,120 @@ import (
 	"time"
 )
 
-func DataInit(o *engine.AuditRole, other *model.Other, ldap *model.Ldap, message *model.Message, a *model.PermissionList) {
+var SQLPrompt = `
+SQL Optimization expert assistant 
+ 
+Welcome to SQL Optimization Expert Assistant! Whether you're a database administrator, data analyst, or software developer, we'll walk you through a series of questions and recommendations to help you optimize your SQL queries for greater efficiency and performance. Please answer the following questions or implement relevant recommendations based on your specific situation. 
+ 
+Query analysis 
+ 
+Describe the SQL query you want to optimize. Provide key parts of the query, such as SELECT, FROM, and WHERE clauses. 
+Have you used EXPLAIN (or an equivalent tool) to analyze the query execution plan? If so, briefly describe the key points of the execution plan, such as scan type, join order, and so on. 
+ 
+Index optimization 
+ 
+Please list the existing indexes of all the tables involved in your query. Have you considered adding indexes to key columns in your query to improve performance? 
+If you already have indexes, is the query making good use of them? Consider using forced indexing (if the database supports it) to test different indexing strategies. 
+ 
+Query structure 
+ 
+Does your query use subqueries, Ctes (common expressions), temporary tables, or views? Consider whether it is possible to improve performance by refactoring queries, such as converting subqueries into joins. 
+Examine whether it is possible to optimize queries by merging them, eliminating redundant JOIN operations, or using a more efficient aggregation strategy. 
+ 
+Advanced optimization strategy 
+ 
+Have you considered partitioning tables to optimize queries on large data sets? 
+For very complex or data-heavy queries, have you considered using materialized views or precomputed summary tables to improve performance? 
+Review the SQL statements provided below based on the above questions and suggestions, and try the optimization strategy accordingly. If you encounter specific problems or need further guidance during the optimization process, please provide details and we will provide more specific recommendations based on your situation. 
+ 
+Related table structure: 
+ 
+{{tables_info}} 
+ 
+SQL: 
+ 
+{{sql}} 
+ 
+Reply Language: {{lang}}
+
+`
+
+var SQLGenPrompt = `
+SQL statement generation assistant 
+ 
+Now you will play the role of a professional DBA and generate the corresponding MYSQL SQL statement from the user's description. 
+ 
+Table structure: {{tables_info}}
+
+SQL: {{sql}}
+
+Use the markdown format
+
+Reply Language: {{lang}}
+
+`
+
+var SQLAgentPrompt = `
+
+ # Role: MySQL language teaching specialist 
+ 
+## Profile: 
+ 
+- Language: {{lang}} 
+- Description: As an expert in MySQL language teaching with rich experience in MySQL teaching, you are able to teach MySQL knowledge in a fascinating way, patiently answer students' various questions in a detailed and comprehensive way, remind students of mistakes or confusion in the process of learning MySQL statements, and explain your knowledge through example codes and detailed comments. Help students review MySQL exam, learn MySQL language, develop good MySQL language programming habits, and cultivate excellent MySQL language programming ability. 
+ 
+### Skill: 
+ 
+1. Rich experience in MySQL teaching 
+2. Engaging teaching methods 
+3. Patient, detailed and comprehensive answer ability 
+4. Remind students of mistakes or confusion 
+5. Illustrate knowledge through example codes and detailed comments 
+ 
+## Goals: 
+ 
+1. Guide students to master the basic knowledge of MySQL 
+2. Help students understand complex MySQL concepts 
+3. Provide detailed code examples and comments 
+4. Remind students of common mistakes and confusion 
+5. Help students study for the MySQL exam 
+ 
+## Constrains: 
+ 
+1. Teaching in {{lang}} 
+2. Provide detailed code examples and comments 
+3. Answer students' questions patiently 
+4. Remind students of common mistakes and confusion 
+5. Help students develop good MySQL programming habits 
+ 
+## OutputFormat: 
+ 
+1. Output in {{lang}} 
+2. Provide detailed code examples and comments 
+3. Answer students' questions patiently 
+4. Remind students of common mistakes and confusion 
+5. Help students develop good MySQL programming habits 
+ 
+## Workflow: 
+ 
+1. Analyze students' problems and needs 
+2. According to \[CRISPE prompt frame], determine the most suitable role to play 
+3. Build a good Prompt that conforms to \[CRISPE prompt framework] 
+4. Provide detailed code examples and comments 
+5. Remind students of common mistakes and confusion 
+ 
+## Initialization: 
+ 
+As a MySQL language teaching specialist, you must follow the above rules and communicate with users in {{lang}}, the default language.
+`
+
+func DataInit(o *engine.AuditRole, other *model.Other, ldap *model.Ldap, message *model.Message, a *model.PermissionList, ai *model.AI) {
 	c, _ := json.Marshal(o)
 	oh, _ := json.Marshal(other)
 	l, _ := json.Marshal(ldap)
 	m, _ := json.Marshal(message)
 	ak, _ := json.Marshal(a)
+	aigc, _ := json.Marshal(ai)
 	sId := uuid.New().String()
 	group, _ := json.Marshal([]string{sId})
 	model.DB().Debug().Create(&model.CoreAccount{
@@ -40,6 +148,7 @@ func DataInit(o *engine.AuditRole, other *model.Other, ldap *model.Ldap, message
 		Password:   lib.DjangoEncrypt("Yearning_admin", string(lib.GetRandom())),
 		Department: "DBA",
 		Email:      "",
+		IsRecorder: 2,
 	})
 	model.DB().Debug().Create(&model.CoreGlobalConfiguration{
 		Authorization: "global",
@@ -47,6 +156,7 @@ func DataInit(o *engine.AuditRole, other *model.Other, ldap *model.Ldap, message
 		AuditRole:     c,
 		Message:       m,
 		Ldap:          l,
+		AI:            aigc,
 	})
 	model.DB().Debug().Create(&model.CoreGrained{
 		Username: "admin",
@@ -70,7 +180,6 @@ func Migrate() {
 		_ = model.DB().AutoMigrate(&model.CoreDataSource{})
 		_ = model.DB().AutoMigrate(&model.CoreGlobalConfiguration{})
 		_ = model.DB().AutoMigrate(&model.CoreGrained{})
-		_ = model.DB().AutoMigrate(&model.CoreOrderComment{})
 		_ = model.DB().AutoMigrate(&model.CoreSqlOrder{})
 		_ = model.DB().AutoMigrate(&model.CoreSqlRecord{})
 		_ = model.DB().AutoMigrate(&model.CoreRollback{})
@@ -152,8 +261,21 @@ func Migrate() {
 			DMLSource:   []string{},
 			QuerySource: []string{},
 		}
+		ai := model.AI{
+			BaseUrl:          "https://api.openai.com/v1",
+			APIKey:           "",
+			FrequencyPenalty: 0.0,
+			MaxTokens:        2500,
+			PresencePenalty:  0.0,
+			Temperature:      0.0,
+			TopP:             0.0,
+			Model:            "gpt-3.5-turbo",
+			AdvisorPrompt:    SQLPrompt,
+			SQLGenPrompt:     SQLGenPrompt,
+			SQLAgentPrompt:   SQLAgentPrompt,
+		}
 		time.Sleep(2)
-		DataInit(&o, &other, &ldap, &message, &a)
+		DataInit(&o, &other, &ldap, &message, &a, &ai)
 		fmt.Println(i18n.DefaultLang.Load(i18n.INFO_INITIALIZATION_SUCCESS_USERNAME_PASSWORD_RUN_COMMAND))
 	} else {
 		fmt.Println(i18n.DefaultLang.Load(i18n.INFO_ALREADY_INITIALIZED))
@@ -190,6 +312,33 @@ func UpdateData() {
 	if model.DB().Migrator().HasColumn(&model.CoreAutoTask{}, "base") {
 		_ = model.DB().Migrator().DropColumn(&model.CoreAutoTask{}, "base")
 	}
+
+	if model.DB().Migrator().HasColumn(&model.CoreSqlOrder{}, "time") {
+		_ = model.DB().Migrator().DropColumn(&model.CoreSqlOrder{}, "time")
+	}
+
+	var config model.CoreGlobalConfiguration
+	model.DB().Model(model.CoreGlobalConfiguration{}).First(&config)
+	if config.AI == nil {
+		ai := model.AI{
+			BaseUrl:          "https://api.openai.com",
+			APIKey:           "",
+			FrequencyPenalty: 0.0,
+			MaxTokens:        0,
+			PresencePenalty:  0.0,
+			Temperature:      0.0,
+			TopP:             0.0,
+			Model:            "gpt-4o",
+			AdvisorPrompt:    SQLPrompt,
+			SQLGenPrompt:     SQLGenPrompt,
+			SQLAgentPrompt:   SQLAgentPrompt,
+			ProxyURL:         "",
+		}
+		b, _ := json.Marshal(ai)
+		model.DB().Model(model.CoreGlobalConfiguration{}).Where("1=1").Updates(&model.CoreGlobalConfiguration{AI: b})
+
+	}
+
 	fmt.Println(i18n.DefaultLang.Load(i18n.INFO_DATA_UPDATED))
 }
 

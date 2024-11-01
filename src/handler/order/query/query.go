@@ -20,48 +20,41 @@ import (
 func FetchQueryOrder(c yee.Context) (err error) {
 	websocket.Handler(func(ws *websocket.Conn) {
 		defer ws.Close()
-		valid, err := lib.WSTokenIsValid(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
-		if err != nil {
-			c.Logger().Error(err)
-			return
-		}
-		if valid {
-			var u common.PageList[[]model.CoreQueryOrder]
-			var b []byte
-			for {
-				if err := websocket.Message.Receive(ws, &b); err != nil {
-					if err != io.EOF {
-						c.Logger().Error(err)
-					}
-					break
-				}
-				if string(b) == "ping" {
-					continue
-				}
-				if err := json.Unmarshal(b, &u); err != nil {
+		var u common.PageList[[]model.CoreQueryOrder]
+		var b []byte
+		for {
+			if err := websocket.Message.Receive(ws, &b); err != nil {
+				if err != io.EOF {
 					c.Logger().Error(err)
-					break
 				}
-				token, err := lib.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
-				if err != nil {
-					c.Logger().Error(err)
-					break
-				}
-				is_record := token.Claims.(jwt.MapClaims)["is_record"].(bool)
-				name := token.Claims.(jwt.MapClaims)["name"].(string)
+				break
+			}
+			if string(b) == "ping" {
+				continue
+			}
+			if err := json.Unmarshal(b, &u); err != nil {
+				c.Logger().Error(err)
+				break
+			}
+			token, err := lib.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
+			if err != nil {
+				c.Logger().Error(err)
+				break
+			}
+			is_record := token.Claims.(jwt.MapClaims)["is_record"].(bool)
+			name := token.Claims.(jwt.MapClaims)["name"].(string)
 
-				u.Paging().OrderBy("(status = 2) DESC, date DESC").Query(
-					common.AccordingQueryToAssigned(c.QueryParam("tp") != "record" && is_record, name),
-					common.AccordingToUsername(u.Expr.Username),
-					common.AccordingToRealName(u.Expr.RealName),
-					common.AccordingToDate(u.Expr.Picker),
-					common.AccordingToWorkId(u.Expr.WorkId),
-					common.AccordingToAllQueryOrderState(u.Expr.Status),
-				)
-				if err = websocket.Message.Send(ws, lib.ToJson(u.ToMessage())); err != nil {
-					c.Logger().Error(err)
-					break
-				}
+			u.Paging().OrderBy("(status = 2) DESC, date DESC").Query(
+				common.AccordingQueryToAssigned(c.QueryParam("tp") != "record" && is_record, name),
+				common.AccordingToUsername(u.Expr.Username),
+				common.AccordingToRealName(u.Expr.RealName),
+				common.AccordingToDate(u.Expr.Picker),
+				common.AccordingToWorkId(u.Expr.WorkId),
+				common.AccordingToAllQueryOrderState(u.Expr.Status),
+			)
+			if err = websocket.Message.Send(ws, lib.ToJson(u.ToMessage())); err != nil {
+				c.Logger().Error(err)
+				break
 			}
 		}
 	}).ServeHTTP(c.Response(), c.Request())

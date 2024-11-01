@@ -77,13 +77,13 @@ var C Config
 
 var DefaultLogger logger.Logger
 
-var JWT = ""
-
 var GloPer CoreGlobalConfiguration
 
 var GloLdap Ldap
 
 var GloOther Other
+
+var GloAI AI
 
 var GloMessage Message
 

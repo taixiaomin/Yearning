@@ -6,6 +6,7 @@ import (
 	"Yearning-go/src/handler/manage/tpl"
 	"Yearning-go/src/i18n"
 	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/enc"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"fmt"
@@ -72,7 +73,7 @@ func ExecuteOrder(u *Confirm, user string) common.Resp {
 			IP:       source.IP,
 			Port:     source.Port,
 			Username: source.Username,
-			Password: lib.Decrypt(model.JWT, source.Password),
+			Password: enc.Decrypt(model.C.General.SecretKey, source.Password),
 			CA:       source.CAFile,
 			Cert:     source.Cert,
 			Key:      source.KeyFile,

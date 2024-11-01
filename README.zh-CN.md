@@ -25,8 +25,8 @@
 [English](README.md) | 简体中文
 
 ## 功能
-
-- **SQL审计** - 支持创建带有批准工作流和自动语法检查器的SQL审计工单，以验证提交的SQL语句的正确性、安全性和合规性。在需要时自动生成与提交的DDL/DML操作相对应的回滚语句，方便恢复操作。保留所有SQL审计操作的详细历史记录，以实现可追溯性和审计目的。
+- **AI助手** - AI助手提供SQL优化建议，帮助用户优化SQL语句，以获得更好的性能。同时AI助手还提供文本到SQL的转换功能
+- **SQL审计** - 支持创建带有标准工作流和自动语法检查器的SQL审计工单，以验证提交的SQL语句的正确性、安全性和合规性。在需要时自动生成与提交的DDL/DML操作相对应的回滚语句，方便恢复操作。保留所有SQL审计操作的详细历史记录，以实现可追溯性和审计目的。
 - **查询审计** - 支持对用户查询语句进行审计，包括对数据源和数据库的限制，以及敏感字段的匿名化处理。查询记录也会被保存以供日后参考。
 - **检查规则** - 自动语法检查器支持数十种检查规则，满足大多数自动检查场景的需求。
 - **安全** - 可在本地部署并具有开源特性的解决方案确保您的数据库和SQL语句的安全。除了提供对基础架构的控制外，还包括加密机制，用于在将敏感数据存储到数据库之前保护数据。
@@ -40,9 +40,9 @@
 
 [下载](https://github.com/cookieY/Yearning/releases/latest) 获取最新版本。
 
-**请确保已正确配置 ./config.toml**
+**请确保已正确配置 ./conf.toml**
 
-#### 手动安装
+#### 手动本地运行
 
 ```bash
 ## 初始化数据库
@@ -56,20 +56,34 @@
 
 ```
 
-**是的，就是这么简单**
 
-#### Docker
+#### Docker 容器运行
 
 ```bash
+### Method 1: use env
 ## 初始化数据库
-docker run --rm -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB yeelabs/yearning "/opt/Yearning install"
-## 必须在启动容器中初始化数据库
-docker run -d -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB yeelabs/yearning
-```
+docker run --rm -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB -e Y_LANG=zh_CN yeelabs/yearning "/opt/Yearning install"
 
+## 必须在启动容器中初始化数据库
+docker run -d -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB -e Y_LANG=zh_CN yeelabs/yearning
+
+
+### Method 2: use config file
+## 挂载配置文件卷, 从配置文件读取配置并启动
+docker run --rm -it -p8000:8000 -v /host/config/conf.toml:/opt/conf.toml yeelabs/yearning "/opt/Yearning install && /opt/Yearning run"
+```
+**是的，就是这么简单**
+
+---
 ## 推荐
 
 [Spug - 开源轻量自动化运维平台](https://github.com/openspug/spug)
+
+<h1 align="center">AI 建议</h1>
+<p align="center">
+基于大语言模型实现 SQL语句优化建议以及 Text 2 SQL功能 <br /> 通过预设或自定义提示词，AI助手可以帮助用户优化SQL语句，以获得更好的性能。同时AI助手还提供文本到SQL的转换功能。
+</p>
+<img src="img/text2sql.jpg" style="width: 1000px" />
 
 <h1 align="center">自动SQL检测</h1>
 <p align="center">

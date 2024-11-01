@@ -10,6 +10,21 @@ type Other struct {
 	Domain      string   `json:"domain"`
 }
 
+type AI struct {
+	BaseUrl          string  `json:"base_url"`
+	APIKey           string  `json:"api_key"`
+	FrequencyPenalty float32 `json:"frequency_penalty"`
+	MaxTokens        int     `json:"max_tokens"`
+	PresencePenalty  float32 `json:"presence_penalty"`
+	Temperature      float32 `json:"temperature"`
+	TopP             float32 `json:"top_p"`
+	Model            string  `json:"model"`
+	AdvisorPrompt    string  `json:"advisor_prompt"`
+	SQLGenPrompt     string  `json:"sql_gen_prompt"`
+	SQLAgentPrompt   string  `json:"sql_agent_prompt"`
+	ProxyURL         string  `json:"proxy_url"`
+}
+
 type Message struct {
 	WebHook  string `json:"web_hook"`
 	Host     string `json:"host"`

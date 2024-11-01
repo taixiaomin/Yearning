@@ -27,6 +27,7 @@ type set struct {
 	Ldap    model.Ldap    `json:"ldap"`
 	Message model.Message `json:"message"`
 	Other   model.Other   `json:"other"`
+	AI      model.AI      `json:"ai"`
 }
 
 type delOrder struct {
@@ -38,7 +39,7 @@ func SuperFetchSetting(c yee.Context) (err error) {
 
 	var k model.CoreGlobalConfiguration
 
-	model.DB().Select("ldap,message,other").First(&k)
+	model.DB().Select("ldap,message,other,ai").First(&k)
 
 	return c.JSON(http.StatusOK, common.SuccessPayload(k))
 }
@@ -53,15 +54,17 @@ func SuperSaveSetting(c yee.Context) (err error) {
 	other, _ := json.Marshal(u.Other)
 	message, _ := json.Marshal(u.Message)
 	ldap, _ := json.Marshal(u.Ldap)
+	ai, _ := json.Marshal(u.AI)
 
 	if !u.Other.Query {
 		model.DB().Model(model.CoreQueryOrder{}).Where("`status` in (?)", []int{1, 2}).Updates(&model.CoreQueryOrder{Status: 3})
 	}
 
-	model.DB().Model(model.CoreGlobalConfiguration{}).Where("1=1").Updates(&model.CoreGlobalConfiguration{Other: other, Message: message, Ldap: ldap})
+	model.DB().Model(model.CoreGlobalConfiguration{}).Where("1=1").Updates(&model.CoreGlobalConfiguration{Other: other, Message: message, Ldap: ldap, AI: ai})
 	model.GloOther = u.Other
 	model.GloLdap = u.Ldap
 	model.GloMessage = u.Message
+	model.GloAI = u.AI
 	return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_DATA_IS_EDIT)))
 }
 

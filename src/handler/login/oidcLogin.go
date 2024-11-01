@@ -63,7 +63,7 @@ func oidcAuthUrl(c yee.Context) (oidcAuthUrl string, state string) {
 // 生成 state，state 格式为 hs265签名.当前分钟数
 func generateState() string {
 	curMinutes := strconv.FormatInt(time.Now().Unix()/60, 10)
-	sign, err := jwt.GetSigningMethod("HS256").Sign(curMinutes, []byte(model.JWT))
+	sign, err := jwt.GetSigningMethod("HS256").Sign(curMinutes, []byte(model.C.General.SecretKey))
 	if err != nil {
 		return ""
 	}
@@ -77,7 +77,7 @@ func validState(state string) error {
 	sign := split[0]
 	curMinutes := time.Now().Unix() / 60
 	for i := 0; i < 3; i++ {
-		err := jwt.GetSigningMethod("HS256").Verify(strconv.FormatInt(curMinutes-int64(i), 10), sign, []byte(model.JWT))
+		err := jwt.GetSigningMethod("HS256").Verify(strconv.FormatInt(curMinutes-int64(i), 10), sign, []byte(model.C.General.SecretKey))
 		if err == nil {
 			return nil
 		}
@@ -149,6 +149,7 @@ func getAccount(code string, sessionState string) (ac *model.CoreAccount, err er
 			Password:   lib.DjangoEncrypt(lib.GenWorkid(), string(lib.GetRandom())),
 			Department: "",
 			Email:      email,
+			IsRecorder: 2,
 		}
 		model.DB().Create(&coreAccount)
 		ix, _ := json.Marshal([]string{})

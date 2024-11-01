@@ -34,7 +34,7 @@ func JwtAuth(h Token) (t string, err error) {
 	claims["real_name"] = h.RealName
 	claims["is_record"] = h.IsRecord
 	claims["exp"] = time.Now().Add(time.Hour * 8).Unix()
-	t, err = token.SignedString([]byte(model.JWT))
+	t, err = token.SignedString([]byte(model.C.General.SecretKey))
 	if err != nil {
 		return "", errors.New("JWT Generate Failure")
 	}
@@ -52,13 +52,13 @@ func (h *Token) JwtParse(c yee.Context) *Token {
 
 func WSTokenIsValid(token string) (bool, error) {
 	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		return []byte(model.JWT), nil
+		return []byte(model.C.General.SecretKey), nil
 	})
 	return t.Valid, err
 }
 
 func WsTokenParse(token string) (*jwt.Token, error) {
 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		return []byte(model.JWT), nil
+		return []byte(model.C.General.SecretKey), nil
 	})
 }
