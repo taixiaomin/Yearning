@@ -33,12 +33,12 @@ WORKDIR /opt/
 
 EXPOSE 8000
 
-ENV Y_LANG = "zh_CN"
-ENV SECRET_KEY = "dbcjqheupqjsuwsm"
-ENV MYSQL_ADDR = ""
-ENV MYSQL_USER = ""
-ENV MYSQL_PASSWORD = ""
-ENV MYSQL_DB = ""
+#ENV Y_LANG  "zh_CN"
+#ENV SECRET_KEY  "dbcjqheupqjsuwsm"
+#ENV MYSQL_ADDR  ""
+#ENV MYSQL_USER  ""
+#ENV MYSQL_PASSWORD  ""
+#ENV MYSQL_DB  ""
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["/opt/Yearning", "run"]
+CMD ["bash", "-c", "/opt/Yearning install && /opt/Yearning run"]

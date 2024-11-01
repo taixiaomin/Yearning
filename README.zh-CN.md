@@ -40,9 +40,9 @@
 
 [下载](https://github.com/cookieY/Yearning/releases/latest) 获取最新版本。
 
-**请确保已正确配置 ./config.toml**
+**请确保已正确配置 ./conf.toml**
 
-#### 手动安装
+#### 手动本地运行
 
 ```bash
 ## 初始化数据库
@@ -56,17 +56,25 @@
 
 ```
 
-**是的，就是这么简单**
 
-#### Docker
+#### Docker 容器运行
 
 ```bash
+### Method 1: use env
 ## 初始化数据库
 docker run --rm -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB -e Y_LANG=zh_CN yeelabs/yearning "/opt/Yearning install"
+
 ## 必须在启动容器中初始化数据库
 docker run -d -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB -e Y_LANG=zh_CN yeelabs/yearning
-```
 
+
+### Method 2: use config file
+## 挂载配置文件卷, 从配置文件读取配置并启动
+docker run --rm -it -p8000:8000 -v /host/config/conf.toml:/opt/conf.toml yeelabs/yearning "/opt/Yearning install && /opt/Yearning run"
+```
+**是的，就是这么简单**
+
+---
 ## 推荐
 
 [Spug - 开源轻量自动化运维平台](https://github.com/openspug/spug)
