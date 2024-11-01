@@ -2,131 +2,122 @@
 
 <h1 style="border-bottom: none">
     <b><a href="https://next.yearning.io">Yearning</a></b><br />
-        Simple, Efficient and MYSQL-Like
-    <br>
 </h1>
-<p>
-Seamlessly integrates SQL detection and query auditing, tailored for the use of DBAs and developers. <br />
-A locally deployed, privacy-focused, simple and efficient for MYSQL audit platform.
-</p>
 </div>
-<div align="center">
 
-![](https://img.shields.io/badge/-x86_x64%20ARM%20Supports%20%E2%86%92-rgb(84,56,255)?style=flat-square&logoColor=white&logo=linux)
+ A robust, locally deployed platform designed for seamless SQL detection and query auditing, tailored specifically for DBAs and developers. Focused on privacy and efficiency, it provides an intuitive and secure environment for MYSQL auditing.
+
+---
 [![OSCS Status](https://www.oscs1024.com/platform/badge/cookieY/Yearning.svg?size=small)](https://www.murphysec.com/dr/nDuoncnUbuFMdrZsh7)
-
-![LICENSE](https://img.shields.io/badge/license-AGPL%20-blue.svg)
-![](https://img.shields.io/github/languages/top/cookieY/Yearning)
-![](https://img.shields.io/docker/image-size/yeelabs/yearning/latest?logo=docker)
-<img alt="Github Stars" src="https://img.shields.io/github/stars/cookieY/Yearning?logo=github">
-[![Releases](https://img.shields.io/github/downloads/cookieY/Yearning/total)](https://github.com/cookieY/Yearning/releases/latest)
-</div>
+![Platform Support](https://img.shields.io/badge/-x86_x64%20ARM%20Supports%20%E2%86%92-rgb(84,56,255)?style=flat-square&logoColor=white&logo=linux)
+[![][github-license-shield]][github-license-link]
+![GitHub top language](https://img.shields.io/github/languages/top/cookieY/Yearning?color=369eff&label=golang&labelColor=black&logo=golang&logoColor=white&style=flat-square)
+[![][github-forks-shield]][github-forks-link]
+[![][github-stars-shield]][github-stars-link]
+[![Downloads](https://img.shields.io/github/downloads/cookieY/Yearning/total?labelColor=black&logo=download&logoColor=white&style=flat-square)](https://github.com/cookieY/Yearning/releases/latest)
 
 English | [简体中文](README.zh-CN.md)
 
-## Feature
+## ✨ Features
 
-- **AI Assistant** — Our AI assistant provides real-time SQL optimization suggestions, helping users to optimize SQL
-  statements for better performance. The AI assistant also provides text to SQL conversion, allowing users to input
-- **SQL Audit** — Support the creation of SQL audit tickets with approval workflows and automated syntax checkers to
-  validate submitted SQL statements for correctness, security, and compliance. Automatically generate rollback
-  statements corresponding to the submitted DDL/DML operations for easy recovery when needed. Maintain a comprehensive
-  history log of all SQL audit operations for traceability and auditing purposes.
-- **Query Audit** — Our solution supports auditing of user query statements, including restrictions on data sources and
-  databases, as well as anonymization of sensitive fields. Query records are also saved for future reference.
-- **Check Rules** — The automated syntax checker supports dozens of check rules, catering to most of the automatic
-  checking scenarios.
-- **Privacy focussed** - Locally deployable and open-source solution ensures the security of your database and SQL
-  statements. In addition to providing control over the infrastructure, the solution also includes encryption mechanisms
-  to protect sensitive data before storing it in your database. This ensures that even if there is unauthorized access
-  to the database, the encrypted data remains secure and unreadable. By combining local deployment, open-source
-  transparency, and data encryption, we prioritize the privacy and security of your database and SQL statements.
-- **RBAC** - In our platform, you can create and manage different roles and assign specific permissions to each role.
-  This allows you to restrict users' access to query work orders, auditing functions, and other sensitive operations
-  based on their assigned roles.
+- **AI Assistant**: Our AI assistant offers real-time SQL optimization suggestions, enhancing SQL performance. It also supports text-to-SQL conversion, allowing users to input natural language and receive optimized SQL statements.
+  
+- **SQL Audit**: Create SQL audit tickets with approval workflows and automated syntax checks. Validate SQL statements for correctness, security, and compliance. Rollback statements are automatically generated for DDL/DML operations, with a comprehensive history log for traceability.
 
-## Docs
+- **Query Audit**: Audit user queries, restrict data sources and databases, and anonymize sensitive fields. Query records are saved for future reference.
 
-[Yearning Docs](https://next.yearning.io) only Chinese
+- **Check Rules**: Our automated syntax checker supports a wide range of check rules, suitable for most automatic checking scenarios.
 
-## Install
+- **Privacy Focused**: Yearning is a locally deployable, open-source solution that ensures the security of your database and SQL statements. It includes encryption mechanisms to protect sensitive data, ensuring it remains secure even if unauthorized access occurs.
 
-[Download](https://github.com/cookieY/Yearning/releases/latest) the latest release and extract it.
+- **RBAC (Role-Based Access Control)**: Create and manage roles with specific permissions, restricting access to query work orders, auditing functions, and other sensitive operations based on user roles.
 
-**First make sure you have configured ./config.toml**
+> \[!TIP]
+> For more detailed information, visit our [Yearning Docs](https://next.yearning.io) (available in Chinese).
 
-#### Manual
+
+## ⚙️ Installation
+
+Download the [latest release](https://github.com/cookieY/Yearning/releases/latest) and extract it. Ensure you have configured `./config.toml` before proceeding.
+
+### Manual Installation
 
 ```bash
-## init database
+## Initialize the database
 ./Yearning install
 
-## start
+## Start Yearning
 ./Yearning run
 
-## help
+## Help
 ./Yearning --help
-
 ```
 
-**Yes, it's that simple**
-
-#### Docker
-
+### 🚀 Deploying with Docker
+[![][docker-release-shield]][docker-release-link]
+[![][docker-size-shield]][docker-size-link]
+[![][docker-pulls-shield]][docker-pulls-link]
 ```bash
-## init database
+## Initialize the database
 docker run --rm -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB -e Y_LANG=zh_CN yeelabs/yearning "/opt/Yearning install"
-## You must initialize your database in the startup container
+
+## Start Yearning
 docker run -d -it -p8000:8000 -e SECRET_KEY=$SECRET_KEY -e MYSQL_USER=$MYSQL_USER -e MYSQL_ADDR=$MYSQL_ADDR -e MYSQL_PASSWORD=$MYSQL_PASSWORD -e MYSQL_DB=$Yearning_DB -e Y_LANG=zh_CN yeelabs/yearning
 ```
+## 🤖 AI Assistance
 
-## Recommend
+Our AI Assistant leverages a large language model to provide SQL optimization suggestions and text-to-SQL conversion. Whether using default or custom prompts, the AI Assistant enhances SQL performance by optimizing statements and converting natural language inputs into SQL queries.
 
-[Spug - 开源轻量自动化运维平台](https://github.com/openspug/spug)
+![Text to SQL](img/text2sql.jpg)
 
-<h1 align="center">AI Advise</h1>
-<p align="center">
-Implementation of SQL statement optimization suggestions and Text 2 SQL features based on a large language model <br /> By default or custom prompt words, AI Assistant can help users optimize SQL statements for better performance. At the same time, the AI assistant also provides text to SQL conversion feat.
-</p>
-<img src="img/text2sql.jpg" style="width: 1000px" />
+## 🔖 Automatic SQL Checker
 
-<h1 align="center">Automatic SQL Checker</h1>
-<p align="center">
-The SQL statement detection function tests against predefined rules and syntax <br /> we can set predefined rules to check whether the SQL statement conforms to specific coding standards, best practices or security requirements.
-</p>
+The automatic SQL checker evaluates SQL statements against predefined rules and syntax. It ensures that statements adhere to specific coding standards, best practices, and security requirements, providing a robust layer of validation.
 
-<img src="img/audit.png" style="width: 1000px" /> 
+![SQL Audit](img/audit.png)
 
-<br />
-<h2 align="center">SQL syntax highlighting and Auto-completion</h2>
-<p align="center">
-SQL syntax highlighting and auto-completion features to enhance the user experience and improve query writing efficiency.<br />SQL syntax highlighting helps users visually distinguish different parts of the SQL query, such as keywords, table names, column names, and operators.  This makes it easier to read and understand the query structure.
-</p>
-<img src="img/query.png" style="width: 1000px" />
-<br />
-<br />
-<h2 align="center">Order/Query record</h2>
-<p align="center">
-  Supports auditing of user order/query statements <br /> Through the auditing feature, you can track and record all query operations, including the data source, database, and handling of sensitive fields. This ensures that query operations comply with regulations and allows for tracing query history.
+## 💡 SQL Syntax Highlighting and Auto-completion
 
+Enhance your query writing efficiency with SQL syntax highlighting and auto-completion. These features help users visually distinguish different components of a SQL query, such as keywords, table names, column names, and operators, making it easier to read and understand the query structure.
 
-</p>
-<img src="img/record.png" style="width: 1000px" />
+![SQL Query](img/query.png)
 
-<br />
+## ⏺️ Order/Query Record
 
-## Ecosystem
+Our platform supports the auditing of user order and query statements. This feature allows you to track and record all query operations, including data sources, databases, and the handling of sensitive fields, ensuring compliance with regulations and providing traceability for query history.
 
-[Gemini](https://github.com/cookieY/gemini-next) Yearning front-end Project
+![Order/Query Record](img/record.png)
 
-[Yee](https://github.com/cookieY/yee) Yearning web framework
+By focusing on these key features, Yearning enhances user experience, optimizes SQL performance, and ensures robust compliance and traceability in database operations.
 
-## Contact Us
+## 🛠️ Recommended Tools
 
-E-mail: henry@yearning.io
+- [Spug - Open Source Lightweight Automation Operations Platform](https://github.com/openspug/spug)
 
-## License
+## ☎️ Contact
 
-See [LICENSE](LICENSE) for details.
+For inquiries, please email us at: henry@yearning.io
+
+## 📋 License
+
+Yearning is licensed under the AGPL license. See [LICENSE](LICENSE) for details.
 
 2023 © Henry Yee
+
+---
+
+With Yearning, experience a streamlined, secure, and efficient approach to SQL auditing and optimization.
+
+
+[docker-pulls-link]: https://hub.docker.com/r/yeelabs/yearning
+[docker-pulls-shield]: https://img.shields.io/docker/pulls/yeelabs/yearning?color=45cc11&labelColor=black&style=flat-square
+[docker-release-link]: https://hub.docker.com/r/yeelabs/yearning
+[docker-release-shield]: https://img.shields.io/docker/v/yeelabs/yearning?color=369eff&label=docker&labelColor=black&logo=docker&logoColor=white&style=flat-square
+[docker-size-link]: https://hub.docker.com/r/yeelabs/yearning
+[docker-size-shield]: https://img.shields.io/docker/image-size/yeelabs/yearning?color=369eff&labelColor=black&style=flat-square
+[github-forks-shield]: https://img.shields.io/github/forks/cookieY/Yearning?color=8ae8ff&labelColor=black&style=flat-square
+[github-forks-link]: https://github.com/cookieY/Yearning/network/members
+[github-stars-link]: https://github.com/cookieY/Yearning/network/stargazers
+[github-stars-shield]: https://img.shields.io/github/stars/cookieY/Yearning?color=ffcb47&labelColor=black&style=flat-square
+[github-license-link]: https://github.com/cookieY/Yearning/blob/main/LICENSE
+[github-license-shield]: https://img.shields.io/badge/AGPL%203.0-white?labelColor=black&style=flat-square
