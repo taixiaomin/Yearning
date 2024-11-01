@@ -102,7 +102,7 @@ For inquiries, please email us at: henry@yearning.io
 
 Yearning is licensed under the AGPL license. See [LICENSE](LICENSE) for details.
 
-2023 © Henry Yee
+2024 © Henry Yee
 
 ---
 
