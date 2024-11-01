@@ -36,7 +36,8 @@ func NewAIAgent() (*AIAssistant, error) {
 		FrequencyPenalty: model.GloAI.FrequencyPenalty,
 		TopP:             model.GloAI.TopP,
 	}
-	config := openai.DefaultAzureConfig(model.GloAI.APIKey, model.GloAI.BaseUrl)
+	config := openai.DefaultConfig(model.GloAI.APIKey)
+	config.BaseURL = model.GloAI.BaseUrl
 	if model.GloAI.ProxyURL != "" {
 		proxyUrl, err := url.Parse(model.GloAI.ProxyURL)
 		if err != nil {

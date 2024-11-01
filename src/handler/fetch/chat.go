@@ -35,7 +35,7 @@ func AiChat(c yee.Context) error {
 	}
 	stream, err := cc.Messages(chat).StreamChatCompletion()
 	if err != nil {
-		fmt.Printf("ChatCompletionStream error: %v\n", err)
+		c.Logger().Criticalf("ChatCompletionStream error: %v\n", err)
 		return nil
 	}
 	defer stream.Close()
@@ -52,7 +52,7 @@ func AiChat(c yee.Context) error {
 			return nil
 		}
 
-		fmt.Fprintln(c.Response(), response.Choices[0].Delta.Content)
+		fmt.Fprintf(c.Response(), "data:%s", response.Choices[0].Delta.Content)
 		c.Response().Flush()
 	}
 }

@@ -262,14 +262,14 @@ func Migrate() {
 			QuerySource: []string{},
 		}
 		ai := model.AI{
-			BaseUrl:          "https://api.openai.com",
+			BaseUrl:          "https://api.openai.com/v1",
 			APIKey:           "",
 			FrequencyPenalty: 0.0,
 			MaxTokens:        2500,
 			PresencePenalty:  0.0,
 			Temperature:      0.0,
 			TopP:             0.0,
-			Model:            "gpt-3-turbo",
+			Model:            "gpt-3.5-turbo",
 			AdvisorPrompt:    SQLPrompt,
 			SQLGenPrompt:     SQLGenPrompt,
 			SQLAgentPrompt:   SQLAgentPrompt,

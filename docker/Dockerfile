@@ -41,4 +41,4 @@ EXPOSE 8000
 #ENV MYSQL_DB  ""
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["bash", "-c", "/opt/Yearning install && /opt/Yearning run"]
+CMD ["bash", "-c", "/opt/Yearning run"]

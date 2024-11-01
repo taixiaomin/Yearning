@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cookieY/sqlx"
+	"strconv"
 	"strings"
 )
 
@@ -109,6 +110,13 @@ func (m *MultiSQLRunner) Run(db *sqlx.DB, schema string) (*Query, error) {
 						results[key] = i18n.DefaultLang.Load(i18n.INFO_SENSITIVE_FIELD)
 					}
 				}
+			case int64:
+				if m.excludeFieldContext(key) {
+					results[key] = i18n.DefaultLang.Load(i18n.INFO_SENSITIVE_FIELD)
+				} else {
+					results[key] = strconv.FormatInt(r, 10)
+				}
+
 			}
 		}
 		query.Data = append(query.Data, results)
