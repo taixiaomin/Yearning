@@ -100,7 +100,6 @@ type CoreSqlOrder struct {
 	Delay       string `gorm:"type:varchar(50);not null;default:'none'" json:"delay"`
 	RealName    string `gorm:"type:varchar(50);not null" json:"real_name"`
 	ExecuteTime string `gorm:"type:varchar(50);" json:"execute_time"`
-	Time        string `gorm:"type:varchar(50);not null;" json:"time"`
 	CurrentStep int    `gorm:"type:int(50);not null default 1;" json:"current_step"`
 	Relevant    JSON   `gorm:"type:json" json:"relevant"`
 	OSCInfo     string `gorm:"type:longtext;default ''" json:"osc_info"`
