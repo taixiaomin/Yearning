@@ -33,7 +33,7 @@ English | [简体中文](README.zh-CN.md)
 - **RBAC (Role-Based Access Control)**: Create and manage roles with specific permissions, restricting access to query work orders, auditing functions, and other sensitive operations based on user roles.
 
 > \[!TIP]
-> For more detailed information, visit our [Yearning Docs](https://next.yearning.io)
+> For more detailed information, visit our [Yearning Guide](https://next.yearning.io)
 
 
 ## ⚙️ Installation
