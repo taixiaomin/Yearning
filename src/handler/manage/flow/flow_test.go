@@ -1,4 +1,4 @@
-package tpl
+package flow
 
 import (
 	"Yearning-go/src/handler/common"
@@ -13,7 +13,7 @@ import (
 )
 
 func setup() {
-	model.DbInit("../../../../conf.toml")
+	//model.NewDBSub()
 	apis.NewTest()
 }
 
@@ -23,7 +23,7 @@ func teardown() {
 
 var apis = test.Case{
 	Method:  http.MethodPost,
-	Uri:     "/api/v2/manage/tpl",
+	Uri:     "/api/v2/manage/flow",
 	Handler: TplRestApis(),
 }
 

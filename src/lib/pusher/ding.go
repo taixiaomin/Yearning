@@ -1,11 +1,13 @@
-package lib
+package pusher
 
 import (
 	"Yearning-go/src/i18n"
 	"Yearning-go/src/model"
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/base64"
 	"fmt"
-	"github.com/cookieY/yee/logger"
 	"io"
 	"net/http"
 	"strings"
@@ -31,8 +33,10 @@ var Commontext = `
 
 `
 
-func SendDingMsg(msg model.Message, sv string) {
+func PusherMessages(msg model.Message, sv string) {
 	//请求地址模板
+
+	//创建一个请求
 
 	hook := msg.WebHook
 
@@ -43,7 +47,7 @@ func SendDingMsg(msg model.Message, sv string) {
 	model.DefaultLogger.Debugf("sv:%v", sv)
 	req, err := http.NewRequest("POST", hook, strings.NewReader(sv))
 	if err != nil {
-		logger.DefaultLogger.Errorf("request:", err)
+		model.DefaultLogger.Errorf("request:", err)
 		return
 	}
 
@@ -58,12 +62,11 @@ func SendDingMsg(msg model.Message, sv string) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		logger.DefaultLogger.Errorf("resp:", err)
+		model.DefaultLogger.Errorf("resp:", err)
 		return
 	}
 	body, _ := io.ReadAll(resp.Body)
 	model.DefaultLogger.Debugf("resp:%v", string(body))
-
 	//关闭请求
 	defer resp.Body.Close()
 }
@@ -97,11 +100,10 @@ func dingMsgTplHandler(state string, generic interface{}) string {
 			Text:     v.Text,
 		}
 	}
-
+	text := Commontext
 	if !stateHandler(state) {
 		order.Assigned = "无"
 	}
-	text := Commontext
 	text = strings.Replace(text, "$STATE", state, -1)
 	text = strings.Replace(text, "$WORKID", order.WorkId, -1)
 	text = strings.Replace(text, "$SOURCE", order.Source, -1)
@@ -110,7 +112,7 @@ func dingMsgTplHandler(state string, generic interface{}) string {
 	text = strings.Replace(text, "$USER", order.Username, -1)
 	text = strings.Replace(text, "$AUDITOR", order.Assigned, -1)
 	text = strings.Replace(text, "$TEXT", order.Text, -1)
-	fmt.Println(text)
+	model.DefaultLogger.Debugf("format:%v", text)
 	return text
 }
 
@@ -120,4 +122,10 @@ func stateHandler(state string) bool {
 		return true
 	}
 	return false
+}
+
+func hmacSha256(stringToSign string, secret string) string {
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(stringToSign))
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }

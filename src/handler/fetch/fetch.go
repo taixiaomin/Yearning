@@ -16,13 +16,17 @@ package fetch
 import (
 	"Yearning-go/src/engine"
 	"Yearning-go/src/handler/common"
-	"Yearning-go/src/handler/manage/tpl"
+	"Yearning-go/src/handler/manage/flow"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/calls"
 	"Yearning-go/src/lib/enc"
+	"Yearning-go/src/lib/factory"
+	"Yearning-go/src/lib/permission"
+	"Yearning-go/src/lib/pusher"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/cookieY/yee"
 	"golang.org/x/net/websocket"
 	"gorm.io/gorm"
@@ -47,10 +51,10 @@ func FetchIsQueryAudit(c yee.Context) (err error) {
 
 func FetchQueryStatus(c yee.Context) (err error) {
 	var check model.CoreQueryOrder
-	t := new(lib.Token).JwtParse(c)
+	t := new(factory.Token).JwtParse(c)
 	model.DB().Model(model.CoreQueryOrder{}).Where("username =?", t.Username).Last(&check)
 	if check.Status == 2 {
-		isExpire := lib.TimeDifference(check.ApprovalTime)
+		isExpire := factory.TimeDifference(check.ApprovalTime)
 		if isExpire {
 			model.DB().Model(model.CoreQueryOrder{}).Where("work_id =?", check.WorkId).Updates(&model.CoreSqlOrder{Status: 3})
 		}
@@ -61,41 +65,40 @@ func FetchQueryStatus(c yee.Context) (err error) {
 }
 
 func FetchSource(c yee.Context) (err error) {
-
 	u := new(_FetchBind)
 	if err := c.Bind(u); err != nil {
-		return err
+		fmt.Println(err)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	if reflect.DeepEqual(u, _FetchBind{}) {
 		return
 	}
 
-	var s model.CoreGrained
-	var groups []string
+	var grained model.CoreGrained
+	var groupIDs []string
 	var source []model.CoreDataSource
 
-	user := new(lib.Token).JwtParse(c)
-
-	model.DB().Where("username =?", user.Username).First(&s)
-	if err := json.Unmarshal(s.Group, &groups); err != nil {
+	user := new(factory.Token).JwtParse(c).Username
+	model.DB().Where("username =?", user).First(&grained)
+	if err := grained.Group.UnmarshalToJSON(&groupIDs); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 	}
-	p := lib.NewMultiUserRuleSet(groups)
+	permission := permission.NewPermissionService(model.DB()).CreatePermissionListFromGroups(groupIDs)
 	switch u.Tp {
 	case "count":
-		return c.JSON(http.StatusOK, common.SuccessPayload(map[string]interface{}{"ddl": len(p.DDLSource), "dml": len(p.DMLSource), "query": len(p.QuerySource)}))
+		return c.JSON(http.StatusOK, common.SuccessPayload(map[string]interface{}{"ddl": len(permission.DDLSource), "dml": len(permission.DMLSource), "query": len(permission.QuerySource)}))
 	case "dml":
-		model.DB().Select("source,id_c,source_id").Where("source_id IN (?)", p.DMLSource).Find(&source)
+		model.DB().Select("source,id_c,source_id").Where("source_id IN (?)", permission.DMLSource).Find(&source)
 	case "ddl":
-		model.DB().Select("source,id_c,source_id").Where("source_id IN (?)", p.DDLSource).Find(&source)
+		model.DB().Select("source,id_c,source_id").Where("source_id IN (?)", permission.DDLSource).Find(&source)
 	case "query":
 		var ord model.CoreQueryOrder
 		// 如果打开查询审核,判断该用户是否存在查询中的工单.如果存在则直接返回该查询工单允许的数据源
-		if model.GloOther.Query && model.DB().Model(model.CoreQueryOrder{}).Where("username =? and `status` =2", user.Username).Last(&ord).Error != gorm.ErrRecordNotFound {
+		if model.GloOther.Query && !errors.Is(model.DB().Model(model.CoreQueryOrder{}).Where("username =? and `status` =2", user).Last(&ord).Error, gorm.ErrRecordNotFound) {
 			model.DB().Select("source,id_c,source_id").Where("source_id =?", ord.SourceId).Find(&source)
 		} else {
-			model.DB().Select("source,id_c,source_id").Where("source_id IN (?)", p.QuerySource).Find(&source)
+			model.DB().Select("source,id_c,source_id").Where("source_id IN (?)", permission.QuerySource).Find(&source)
 		}
 	case "all":
 		model.DB().Select("source,id_c,source_id").Find(&source)
@@ -106,7 +109,7 @@ func FetchSource(c yee.Context) (err error) {
 }
 
 type StepInfo struct {
-	tpl.Tpl
+	flow.Tpl
 	model.CoreWorkflowDetail
 }
 
@@ -120,7 +123,7 @@ func FetchAuditSteps(c yee.Context) (err error) {
 	model.DB().Select("status").Where("work_id = ?", c.QueryParam("work_id")).First(&order)
 	if order.Status == 2 || order.Status == 3 || order.Status == 5 || workId == "" {
 		unescape, _ := url.QueryUnescape(u)
-		whoIsAuditor, err := tpl.OrderRelation(unescape)
+		whoIsAuditor, err := flow.OrderRelation(unescape)
 		if err != nil {
 			return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 		}
@@ -134,10 +137,11 @@ func FetchAuditSteps(c yee.Context) (err error) {
 
 	} else {
 		for _, i := range s {
-			steps = append(steps, StepInfo{Tpl: tpl.Tpl{Desc: i.Action, Auditor: []string{i.Username}}, CoreWorkflowDetail: i})
+			steps = append(steps, StepInfo{Tpl: flow.Tpl{Desc: i.Action, Auditor: []string{i.Username}}, CoreWorkflowDetail: i})
 		}
 	}
 	return c.JSON(http.StatusOK, common.SuccessPayload(steps))
+
 }
 
 func FetchHighLight(c yee.Context) (err error) {
@@ -168,7 +172,7 @@ func FetchBase(c yee.Context) (err error) {
 	}
 	if u.Hide {
 		var _t []string
-		mp := lib.MapOn(strings.Split(s.ExcludeDbList, ","))
+		mp := factory.MapOn(strings.Split(s.ExcludeDbList, ","))
 		for _, i := range result.Results {
 			if _, ok := mp[i]; !ok {
 				_t = append(_t, i)
@@ -184,7 +188,7 @@ func FetchTable(c yee.Context) (err error) {
 	u := new(_FetchBind)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	var s model.CoreDataSource
 	unescape, _ := url.QueryUnescape(u.SourceId)
@@ -203,7 +207,7 @@ func FetchTableInfo(c yee.Context) (err error) {
 	u := new(_FetchBind)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 
 	if u.DataBase != "" && u.Table != "" {
@@ -219,23 +223,16 @@ func FetchSQLTest(c yee.Context) (err error) {
 	u := new(common.SQLTest)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
-
-	t := new(lib.Token).JwtParse(c)
-	control := lib.SourceControl{User: t.Username, Kind: u.Kind, SourceId: u.SourceId, WorkId: u.WorkId}
-	if !control.Equal() {
-		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(errors.New("您没有该数据源权限，无法执行该操作")))
-	}
-
 	var s model.CoreDataSource
 	model.DB().Where("source_id =?", u.SourceId).First(&s)
-	rule, err := lib.CheckDataSourceRule(s.RuleId)
+	rule, err := factory.CheckDataSourceRule(s.RuleId)
 	if err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 	}
 	var rs []engine.Record
-	if client := lib.NewRpc(); client != nil {
+	if client := calls.NewRpc(); client != nil {
 		if err := client.Call("Engine.Check", engine.CheckArgs{
 			SQL:      u.SQL,
 			Schema:   u.Database,
@@ -250,11 +247,11 @@ func FetchSQLTest(c yee.Context) (err error) {
 			Lang:     model.C.General.Lang,
 			Rule:     *rule,
 		}, &rs); err != nil {
-			return c.JSON(http.StatusOK, common.ERR_RPC)
+			return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 		}
 		return c.JSON(http.StatusOK, common.SuccessPayload(rs))
 	}
-	return c.JSON(http.StatusOK, common.ERR_RPC)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(fmt.Errorf("client is nil")))
 }
 
 func FetchOrderDetailList(c yee.Context) (err error) {
@@ -264,7 +261,7 @@ func FetchOrderDetailList(c yee.Context) (err error) {
 	}
 	var record []model.CoreSqlRecord
 	var count int64
-	start, end := lib.Paging(expr.Page, expr.PageSize)
+	start, end := factory.Paging(expr.Page, expr.PageSize)
 	model.DB().Model(&model.CoreSqlRecord{}).Where("work_id =?", expr.WorkId).Count(&count).Offset(start).Limit(end).Find(&record)
 	return c.JSON(http.StatusOK, common.SuccessPayload(map[string]interface{}{"record": record, "count": count}))
 }
@@ -279,31 +276,31 @@ func FetchOrderDetailRollSQL(c yee.Context) (err error) {
 
 func FetchUndo(c yee.Context) (err error) {
 	u := c.QueryParam("work_id")
-	user := new(lib.Token).JwtParse(c)
-	var undo model.CoreSqlOrder
-	if err := model.DB().Where(UNDO_EXPR, user.Username, u, 2).First(&undo).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	user := new(factory.Token).JwtParse(c)
+	var order model.CoreSqlOrder
+	if err := model.DB().Where(UNDO_EXPR, user.Username, u, 2).First(&order).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.UNDO_MESSAGE_ERROR)))
 	}
-	lib.MessagePush(undo.WorkId, 6, "")
+	pusher.NewMessagePusher(order.WorkId).Order().OrderBuild(pusher.UndoStatus).Push()
 	model.DB().Where(UNDO_EXPR, user.Username, u, 2).Delete(&model.CoreSqlOrder{})
-	return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.UNDO_MESSAGE_ERROR)))
+	return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.UNDO_MESSAGE_SUCCESS)))
 }
 
-func FetchMergeDDL(c yee.Context) (err error) {
+func FetchMergeDDL(c yee.Context) error {
 	req := new(referOrder)
-	if err = c.Bind(req); err != nil {
+	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 	}
-	var m string
+	var optimizeSQL string
 	if req.SQLs != "" {
-		if client := lib.NewRpc(); client != nil {
-			if err := client.Call("Engine.MergeAlterTables", req.SQLs, &m); err != nil {
-				return c.JSON(http.StatusOK, common.ERR_SOAR_ALTER_MERGE(err))
+		if client := calls.NewRpc(); client != nil {
+			if err := client.Call("Engine.MergeAlterTables", req.SQLs, &optimizeSQL); err != nil {
+				return c.JSON(http.StatusOK, common.ERR_SOAR_ALTER_MERGE())
 			}
-			return c.JSON(http.StatusOK, common.SuccessPayload(m))
+			return c.JSON(http.StatusOK, common.SuccessPayload(optimizeSQL))
 		}
 	}
-	return c.JSON(http.StatusOK, common.ERR_SOAR_ALTER_MERGE(err))
+	return c.JSON(http.StatusOK, common.ERR_SOAR_ALTER_MERGE())
 
 }
 
@@ -336,7 +333,7 @@ func FetchOrderComment(c yee.Context) (err error) {
 			if workId != "" {
 				var comment []model.CoreOrderComment
 				model.DB().Model(model.CoreOrderComment{}).Where("work_id =?", workId).Find(&comment)
-				err := websocket.Message.Send(ws, lib.ToJson(comment))
+				err := websocket.Message.Send(ws, factory.ToJson(comment))
 				if err != nil {
 					c.Logger().Error(err)
 					break
@@ -355,9 +352,9 @@ func FetchOrderComment(c yee.Context) (err error) {
 func PostOrderComment(c yee.Context) (err error) {
 	u := new(model.CoreOrderComment)
 	if err := c.Bind(u); err != nil {
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
-	t := new(lib.Token).JwtParse(c)
+	t := new(factory.Token).JwtParse(c)
 	u.Time = time.Now().Format("2006-01-02 15:04")
 	u.Username = t.Username
 	model.DB().Model(model.CoreOrderComment{}).Create(u)
@@ -365,7 +362,7 @@ func PostOrderComment(c yee.Context) (err error) {
 }
 
 func FetchUserGroups(c yee.Context) (err error) {
-	user := new(lib.Token).JwtParse(c)
+	user := new(factory.Token).JwtParse(c)
 	toUser := c.QueryParam("user")
 	if user.Username != "admin" && user.Username != toUser {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(errors.New(i18n.DefaultLang.Load(i18n.ER_ILLEGAL_GET_INFO))))
@@ -393,7 +390,7 @@ func FetchOrderState(c yee.Context) (err error) {
 			if workId != "" {
 				var order model.CoreSqlOrder
 				model.DB().Model(model.CoreSqlOrder{}).Select("status").Where("work_id =?", workId).First(&order)
-				err := websocket.Message.Send(ws, lib.ToJson(order.Status))
+				err := websocket.Message.Send(ws, factory.ToJson(order.Status))
 				if err != nil {
 					c.Logger().Error(err)
 					break
@@ -408,10 +405,22 @@ func FetchOrderState(c yee.Context) (err error) {
 }
 
 func FetchUserInfo(c yee.Context) (err error) {
-	t := new(lib.Token).JwtParse(c)
+	t := new(factory.Token).JwtParse(c)
 	var userInfo model.CoreAccount
-	model.DB().Select("department,username,real_name,email").Model(model.CoreAccount{}).Where("username =?", t.Username).First(&userInfo)
-	return c.JSON(http.StatusOK, common.SuccessPayload(userInfo))
+	var sources []model.CoreDataSource
+	var grained model.CoreGrained
+	var groupIDs []string
+	model.DB().Select("department,username,real_name,email,query_password,secret_key").Model(model.CoreAccount{}).Where("username =?", t.Username).First(&userInfo)
+	model.DB().Select("`group`").Where("username =?", t.Username).First(&grained)
+	_ = grained.Group.UnmarshalToJSON(&groupIDs)
+	model.DB().Model(model.CoreDataSource{}).Select("source_id,source").Where("source_id IN ?", permission.NewPermissionService(model.DB()).CreatePermissionListFromGroups(groupIDs).QuerySource).Find(&sources)
+	p := userProfile{
+		Department: userInfo.Department,
+		RealName:   userInfo.RealName,
+		Username:   userInfo.Username,
+		Email:      userInfo.Email,
+	}
+	return c.JSON(http.StatusOK, common.SuccessPayload(map[string]interface{}{"user": p, "source": sources}))
 }
 
 func FetchSQLAdvisor(c yee.Context) (err error) {

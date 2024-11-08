@@ -15,7 +15,7 @@ type message struct {
 
 func AiChat(c yee.Context) error {
 
-	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set(yee.HeaderContentType, "text/event-stream")
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Connection", "keep-alive")
 

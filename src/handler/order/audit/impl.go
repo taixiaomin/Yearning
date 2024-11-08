@@ -3,10 +3,12 @@ package audit
 import (
 	"Yearning-go/src/engine"
 	"Yearning-go/src/handler/common"
-	"Yearning-go/src/handler/manage/tpl"
+	"Yearning-go/src/handler/manage/flow"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/calls"
 	"Yearning-go/src/lib/enc"
+	"Yearning-go/src/lib/factory"
+	"Yearning-go/src/lib/pusher"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"fmt"
@@ -39,9 +41,9 @@ type Confirm struct {
 	Delay    string `json:"delay"`
 }
 
-func (e *Confirm) GetTPL() []tpl.Tpl {
+func (e *Confirm) GetTPL() []flow.Tpl {
 	var s model.CoreDataSource
-	var tpl []tpl.Tpl
+	var tpl []flow.Tpl
 	var flow model.CoreWorkflowTpl
 	model.DB().Model(model.CoreDataSource{}).Select("flow_id").Where("source_id =?", e.SourceId).First(&s)
 	model.DB().Model(model.CoreWorkflowTpl{}).Where("id =?", s.FlowID).First(&flow)
@@ -60,13 +62,13 @@ func ExecuteOrder(u *Confirm, user string) common.Resp {
 	order.Assigned = user
 
 	model.DB().Model(model.CoreDataSource{}).Where("source_id =?", order.SourceId).First(&source)
-	rule, err := lib.CheckDataSourceRule(source.RuleId)
+	rule, err := factory.CheckDataSourceRule(source.RuleId)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
 
 	var isCall bool
-	if client := lib.NewRpc(); client != nil {
+	if client := calls.NewRpc(); client != nil {
 		if err := client.Call("Engine.Exec", &ExecArgs{
 			Order:    &order,
 			Rules:    *rule,
@@ -79,7 +81,7 @@ func ExecuteOrder(u *Confirm, user string) common.Resp {
 			Key:      source.KeyFile,
 			Message:  model.GloMessage,
 		}, &isCall); err != nil {
-			return common.ERR_RPC
+			return common.ERR_COMMON_MESSAGE(err)
 		}
 		model.DB().Create(&model.CoreWorkflowDetail{
 			WorkId:   u.WorkId,
@@ -89,7 +91,7 @@ func ExecuteOrder(u *Confirm, user string) common.Resp {
 		})
 		return common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.ORDER_EXECUTE_STATE))
 	}
-	return common.ERR_RPC
+	return common.ERR_COMMON_MESSAGE(fmt.Errorf("rpc client is nil"))
 
 }
 
@@ -105,27 +107,27 @@ func MultiAuditOrder(req *Confirm, user string) common.Resp {
 			Time:     time.Now().Format("2006-01-02 15:04"),
 			Action:   fmt.Sprintf(i18n.DefaultLang.Load(i18n.ORDER_AGREE_MESSAGE), strings.Join(assigned, " ")),
 		})
-		lib.MessagePush(req.WorkId, 5, "")
+		pusher.NewMessagePusher(req.WorkId).Order().OrderBuild(pusher.NextStepStatus).Push()
 		return common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.ORDER_AGREE_STATE))
 	}
 	return common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ORDER_NOT_SEARCH))
 }
 
-func RejectOrder(u *Confirm, user string) common.Resp {
-	model.DB().Model(&model.CoreSqlOrder{}).Where("work_id =?", u.WorkId).Updates(map[string]interface{}{"status": 0})
+func RejectOrder(req *Confirm, user string) common.Resp {
+	model.DB().Model(&model.CoreSqlOrder{}).Where("work_id =?", req.WorkId).Updates(map[string]interface{}{"status": 0})
 	model.DB().Create(&model.CoreWorkflowDetail{
-		WorkId:   u.WorkId,
+		WorkId:   req.WorkId,
 		Username: user,
 		Time:     time.Now().Format("2006-01-02 15:04"),
 		Action:   i18n.DefaultLang.Load(i18n.ORDER_REJECT_MESSAGE),
 	})
 	model.DB().Create(&model.CoreOrderComment{
-		WorkId:   u.WorkId,
+		WorkId:   req.WorkId,
 		Username: user,
-		Content:  fmt.Sprintf("驳回理由: %s", u.Text),
+		Content:  fmt.Sprintf("驳回理由: %s", req.Text),
 		Time:     time.Now().Format("2006-01-02 15:04"),
 	})
-	lib.MessagePush(u.WorkId, 0, u.Text)
+	pusher.NewMessagePusher(req.WorkId).Order().OrderBuild(pusher.RejectStatus).Push()
 	return common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.ORDER_REJECT_STATE))
 }
 

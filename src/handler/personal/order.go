@@ -3,7 +3,7 @@ package personal
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"github.com/cookieY/yee"
@@ -32,13 +32,13 @@ func PersonalFetchMyOrder(c yee.Context) (err error) {
 				c.Logger().Error(err)
 				break
 			}
-			token, err := lib.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
+			token, err := factory.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
 			if err != nil {
 				c.Logger().Error(err)
 				break
 			}
 			user := token.Claims.(jwt.MapClaims)["name"].(string)
-			u.Paging().Select(common.QueryField).Query(
+			u.Paging().OrderBy("(status = 2) DESC, date DESC").Select(common.QueryField).Query(
 				common.AccordingToAllOrderType(u.Expr.Type),
 				common.AccordingToAllOrderState(u.Expr.Status),
 				common.AccordingToUsernameEqual(user),
@@ -46,7 +46,7 @@ func PersonalFetchMyOrder(c yee.Context) (err error) {
 				common.AccordingToText(u.Expr.Text),
 				common.AccordingToWorkId(u.Expr.WorkId),
 			)
-			if err = websocket.Message.Send(ws, lib.ToJson(u.ToMessage())); err != nil {
+			if err = websocket.Message.Send(ws, factory.ToJson(u.ToMessage())); err != nil {
 				c.Logger().Error(err)
 				break
 			}
@@ -55,36 +55,39 @@ func PersonalFetchMyOrder(c yee.Context) (err error) {
 	return nil
 }
 
-func PersonalUserEdit(c yee.Context) (err error) {
-	u := new(model.CoreAccount)
-	if err = c.Bind(u); err != nil {
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+func editPersonalUser(c yee.Context) (err error) {
+	// 创建一个新的 CoreAccount 结构体实例
+	userDetails := new(model.CoreAccount)
+
+	// 绑定请求数据到 CoreAccount 结构体
+	if err = c.Bind(userDetails); err != nil {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
-	user := new(lib.Token).JwtParse(c)
-	if u.Password == "" {
-		model.DB().Model(&model.CoreAccount{}).Where("username = ?", user.Username).Updates(
-			&model.CoreAccount{
-				Email:      u.Email,
-				RealName:   u.RealName,
-				Department: u.Department,
-			})
-	} else {
-		model.DB().Model(&model.CoreAccount{}).Where("username = ?", user.Username).Updates(
-			&model.CoreAccount{
-				Password:   lib.DjangoEncrypt(u.Password, string(lib.GetRandom())),
-				Email:      u.Email,
-				RealName:   u.RealName,
-				Department: u.Department,
-			})
+
+	// 准备更新的数据
+	updateFields := &model.CoreAccount{
+		Email:      userDetails.Email,
+		RealName:   userDetails.RealName,
+		Department: userDetails.Department,
 	}
+
+	// 如果密码不为空，则进行加密并更新
+	if userDetails.Password != "" {
+		updateFields.Password = factory.DjangoEncrypt(userDetails.Password, string(factory.GetRandom()))
+	}
+
+	// 更新数据库中的用户数据
+	model.DB().Model(&model.CoreAccount{}).Where("username = ?", new(factory.Token).JwtParse(c).Username).Updates(updateFields)
+
+	// 返回成功的消息
 	return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.CUSTOM_PASSWORD_SUCCESS)))
 }
 
-func Get(c yee.Context) (err error) {
+func GET(c yee.Context) (err error) {
 	switch c.Params("tp") {
 	case "list":
 		return PersonalFetchMyOrder(c)
 	default:
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	}
 }

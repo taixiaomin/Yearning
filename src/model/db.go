@@ -57,8 +57,8 @@ func initConfig(cPath string) {
 	DefaultLogger = logger.LogCreator(int(TransferLogLevel()))
 }
 
-func DBNew(c string) {
-	initConfig(c)
+func DBNew(cPath string) {
+	initConfig(cPath)
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", os.Getenv("MYSQL_USER"), os.Getenv("MYSQL_PASSWORD"), os.Getenv("MYSQL_ADDR"), os.Getenv("MYSQL_DB"))
 	if os.Getenv("MYSQL_USER") == "" {
 		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", C.Mysql.User, C.Mysql.Password, C.Mysql.Host, C.Mysql.Port, C.Mysql.Db)

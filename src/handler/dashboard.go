@@ -15,7 +15,7 @@ package handler
 
 import (
 	"Yearning-go/src/handler/common"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"github.com/cookieY/yee"
 	"net/http"
@@ -42,7 +42,7 @@ type bannerCount struct {
 
 func DashBanner(c yee.Context) (err error) {
 	var b bannerCount
-	user := new(lib.Token).JwtParse(c)
+	user := new(factory.Token).JwtParse(c)
 	model.DB().Model(model.CoreAccount{}).Count(&b.User)
 	model.DB().Model(model.CoreQueryOrder{}).Count(&b.Query)
 	model.DB().Model(model.CoreSqlOrder{}).Count(&b.Order)
@@ -51,12 +51,12 @@ func DashBanner(c yee.Context) (err error) {
 	model.DB().Model(model.CoreSqlOrder{}).Where("username =? and `type` =?", user.Username, 1).Count(&b.SelfDML)
 	model.DB().Model(model.CoreQueryOrder{}).Where("username =?", user.Username).Count(&b.SelfQuery)
 	model.DB().Model(model.CoreSqlOrder{}).Where("status = ? and assigned like ?", 2, "%"+user.Username+"%").Count(&b.SelfAudit)
-	model.DB().Model(model.CoreTotalTickets{}).Order("date desc ").Limit(7).Find(&b.TotalOrder)
+	model.DB().Debug().Model(model.CoreTotalTickets{}).Order("date desc ").Limit(7).Find(&b.TotalOrder)
 	return c.JSON(http.StatusOK, common.SuccessPayload(b))
 }
 
 func DashUserInfo(c yee.Context) (err error) {
-	user := new(lib.Token).JwtParse(c)
+	user := new(factory.Token).JwtParse(c)
 	var (
 		p         model.CoreGrained
 		groupList []model.CoreRoleGroup
@@ -73,6 +73,6 @@ func DashStmt(c yee.Context) (err error) {
 
 func DashTop(c yee.Context) (err error) {
 	var source []groupBy
-	model.DB().Model(model.CoreSqlOrder{}).Select("source, count(*) as c").Group("source").Order("c desc").Limit(10).Scan(&source)
+	model.DB().Debug().Model(model.CoreSqlOrder{}).Select("source, count(*) as c").Group("source").Order("c desc").Limit(10).Scan(&source)
 	return c.JSON(http.StatusOK, common.SuccessPayload(source))
 }

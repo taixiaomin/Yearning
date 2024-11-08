@@ -96,4 +96,5 @@ var zh_CN = map[int]string{
 	INFO_QUERY_AUDIT_DISABLED:                                 "当前未开启查询审核，用户可自由查询",
 	ER_USER_NO_PERMISSION:                                     "user:%s没有该数据源(%s)权限，无法执行该操作",
 	ER_DATABASE_CONNECTION_FAILED:                             "数据库连接失败",
+	ERR_FLOW_ORDER_IS_NOT_COMPLETE:                            "工单编号:%s仍处于审核中状态，请将对应工单完成之后再编辑此流程",
 }

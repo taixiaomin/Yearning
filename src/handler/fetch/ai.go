@@ -1,7 +1,7 @@
 package fetch
 
 import (
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"context"
 	"github.com/sashabaranov/go-openai"
@@ -60,7 +60,7 @@ func (ai *AIAssistant) Messages(messages []openai.ChatCompletionMessage) *AIAssi
 }
 
 func (ai *AIAssistant) BuildSQLAdvise(prompt *advisorFrom, tables []string, kind string) (string, error) {
-	sql, err := lib.GetFingerprint(prompt.SQL)
+	sql, err := factory.GetFingerprint(prompt.SQL)
 	if err != nil {
 		return "", err
 	}

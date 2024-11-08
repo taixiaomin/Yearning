@@ -3,7 +3,7 @@ package user
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"errors"
 	"gorm.io/gorm"
@@ -60,9 +60,9 @@ func SuperUserRegister(u *CommonUserPost) common.Resp {
 	if err := model.DB().Where("username = ?", u.Username).Select("username").First(&unique).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 		return common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.ER_USER_REGUSTER))
 	}
-	u.Password = lib.DjangoEncrypt(u.Password, string(lib.GetRandom()))
+	u.Password = factory.DjangoEncrypt(u.Password, string(factory.GetRandom()))
 	u.CoreAccount.IsRecorder = 2
 	model.DB().Create(&u.CoreAccount)
-	model.DB().Create(&model.CoreGrained{Username: u.Username, Group: lib.EmptyGroup()})
+	model.DB().Create(&model.CoreGrained{Username: u.Username, Group: factory.EmptyGroup()})
 	return common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.USER_REGUSTER_SUCCESS))
 }

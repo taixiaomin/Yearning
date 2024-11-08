@@ -2,11 +2,12 @@ package user
 
 import (
 	"Yearning-go/src/handler/common"
-	"Yearning-go/src/handler/manage/tpl"
+	"Yearning-go/src/handler/manage/flow"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/cookieY/yee"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 func SuperFetchUser(c yee.Context) (err error) {
 	u := new(common.PageList[[]model.CoreAccount])
 	if err := c.Bind(u); err != nil {
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	u.Paging().Select(CommonExpr).Query(
 		common.AccordingToRealName(u.Expr.RealName),
@@ -29,7 +30,7 @@ func SuperFetchUser(c yee.Context) (err error) {
 
 func SuperDeleteUser(c yee.Context) (err error) {
 
-	if new(lib.Token).JwtParse(c).Username != "admin" {
+	if new(factory.Token).JwtParse(c).Username != "admin" {
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.ADMIN_HAVE_DELETE_OTHER)))
 	}
 
@@ -38,7 +39,7 @@ func SuperDeleteUser(c yee.Context) (err error) {
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.ADMIN_NOT_DELETE)))
 	}
 	var flows []model.CoreWorkflowTpl
-	var step []tpl.Tpl
+	var step []flow.Tpl
 	var tips []string
 	model.DB().Find(&flows)
 	for _, i := range flows {
@@ -66,7 +67,7 @@ func SuperDeleteUser(c yee.Context) (err error) {
 func ManageUserCreateOrEdit(c yee.Context) (err error) {
 	u := new(CommonUserPost)
 	if err = c.Bind(u); err != nil {
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	switch c.QueryParam("tp") {
 	case "principal":
@@ -79,20 +80,20 @@ func ManageUserCreateOrEdit(c yee.Context) (err error) {
 		return c.JSON(http.StatusOK, SuperUserRegister(u))
 	case "password":
 		model.DB().Model(&model.CoreAccount{}).Where("username = ?", u.Username).Updates(
-			model.CoreAccount{Password: lib.DjangoEncrypt(u.Password, string(lib.GetRandom()))})
+			model.CoreAccount{Password: factory.DjangoEncrypt(u.Password, string(factory.GetRandom()))})
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.USER_EDIT_PASSWORD_SUCCESS)))
 	case "policy":
 		g, _ := json.Marshal(u.Group)
 		model.DB().Model(model.CoreGrained{}).Scopes(common.AccordingToUsernameEqual(u.Username)).Updates(model.CoreGrained{Group: g})
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(fmt.Sprintf(i18n.DefaultLang.Load(i18n.USER_PROLICY_EDIT_SUCCESS), u.Username)))
 	}
-	return c.JSON(http.StatusOK, common.ERR_REQ_PASSWORD_FAKE)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(errors.New(i18n.DefaultLang.Load(i18n.ER_REQ_PASSWORD_FAKE))))
 }
 
 func ManageUserFetch(c yee.Context) (err error) {
 	u := new(CommonUserGet)
 	if err = c.Bind(u); err != nil {
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	switch u.Tp {
 	case "depend":
@@ -104,5 +105,5 @@ func ManageUserFetch(c yee.Context) (err error) {
 		model.DB().Where("username=?", u.User).First(&userP)
 		return c.JSON(http.StatusOK, common.SuccessPayload(map[string]interface{}{"group": userP.Group, "list": p}))
 	}
-	return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 }

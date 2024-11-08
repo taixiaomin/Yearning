@@ -1,8 +1,8 @@
 package common
 
 import (
-	"Yearning-go/src/lib"
 	"Yearning-go/src/lib/enc"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"errors"
 	"fmt"
@@ -38,7 +38,7 @@ func ScanDataRows(s model.CoreDataSource, database, sql, meta string, isQuery bo
 	if len(_tmp) == 0 {
 		return nil, errors.New("field is empty")
 	}
-	excludeDbList := lib.MapOn(strings.Split(s.ExcludeDbList, ","))
+	excludeDbList := factory.MapOn(strings.Split(s.ExcludeDbList, ","))
 	for rows.Next() {
 		if err = rows.Scan(_tmp...); err != nil {
 			logger.DefaultLogger.Error(err)

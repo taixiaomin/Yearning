@@ -16,8 +16,8 @@ package db
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
 	"Yearning-go/src/lib/enc"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"github.com/cookieY/yee"
 	"net/http"
@@ -38,9 +38,8 @@ func SuperFetchSource(c yee.Context) (err error) {
 }
 
 func SuperDeleteSource(c yee.Context) (err error) {
-	user := new(lib.Token).JwtParse(c)
-	if user.Username != "admin" {
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+	if !new(factory.Token).JwtParse(c).IsAdmin() {
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	}
 
 	var k []model.CoreRoleGroup
@@ -53,10 +52,10 @@ func SuperDeleteSource(c yee.Context) (err error) {
 	if er := tx.Where("source_id =?", sourceId).Delete(&model.CoreDataSource{}).Error; er != nil {
 		tx.Rollback()
 		c.Logger().Error(er.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	for i := range k {
-		b, err := lib.MultiArrayRemove(k[i].Permissions, []string{"ddl_source", "dml_source", "query_source"}, sourceId)
+		b, err := factory.MultiArrayRemove(k[i].Permissions, []string{"ddl_source", "dml_source", "query_source"}, sourceId)
 		if err != nil {
 			return c.JSON(http.StatusOK, err)
 		}
@@ -74,7 +73,7 @@ func ManageDBCreateOrEdit(c yee.Context) (err error) {
 	u := new(CommonDBPost)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	switch u.Tp {
 	case "edit":
@@ -87,5 +86,5 @@ func ManageDBCreateOrEdit(c yee.Context) (err error) {
 		}
 		return c.JSON(http.StatusOK, SuperTestDBConnect(&u.DB))
 	}
-	return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 }

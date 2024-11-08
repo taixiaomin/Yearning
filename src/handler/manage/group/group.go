@@ -16,7 +16,7 @@ package group
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"fmt"
@@ -43,12 +43,12 @@ func SuperGroup(c yee.Context) (err error) {
 }
 
 func SuperGroupUpdate(c yee.Context) (err error) {
-	user := new(lib.Token).JwtParse(c)
+	user := new(factory.Token).JwtParse(c)
 	if user.Username == "admin" {
 		u := new(policy)
 		if err = c.Bind(u); err != nil {
 			c.Logger().Error(err.Error())
-			return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+			return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 		}
 		g, err := json.Marshal(u.PermissionList)
 		if err != nil {
@@ -67,7 +67,7 @@ func SuperGroupUpdate(c yee.Context) (err error) {
 		}
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(fmt.Sprintf(i18n.DefaultLang.Load(i18n.GROUP_CREATE_SUCCESS), u.Name)))
 	}
-	return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 }
 
 func SuperClearUserRule(c yee.Context) (err error) {
@@ -76,7 +76,7 @@ func SuperClearUserRule(c yee.Context) (err error) {
 	var j []model.CoreGrained
 	model.DB().Scopes(common.AccordingToGroupNameIsLike(scape)).Find(&j)
 	for _, i := range j {
-		b, err := lib.ArrayRemove(i.Group, scape)
+		b, err := factory.ArrayRemove(i.Group, scape)
 		if err != nil {
 			return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
 		}

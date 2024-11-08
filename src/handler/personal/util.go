@@ -3,8 +3,9 @@ package personal
 import (
 	"Yearning-go/src/handler/order/audit"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/calls"
 	"Yearning-go/src/lib/enc"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"errors"
 	"github.com/cookieY/yee/logger"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-func CallAutoTask(order *model.CoreSqlOrder, length int) {
+func autoTask(order *model.CoreSqlOrder, length int) {
 	// todo 以下代码为autoTask代码
 	var autoTask model.CoreAutoTask
 	var source model.CoreDataSource
@@ -24,11 +25,11 @@ func CallAutoTask(order *model.CoreSqlOrder, length int) {
 	}
 	var isCall bool
 	model.DB().Model(model.CoreDataSource{}).Where("source_id =?", order.SourceId).First(&source)
-	rule, err := lib.CheckDataSourceRule(source.RuleId)
+	rule, err := factory.CheckDataSourceRule(source.RuleId)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
-	if client := lib.NewRpc(); client != nil {
+	if client := calls.NewRpc(); client != nil {
 		if err := client.Call("Engine.Exec", &audit.ExecArgs{
 			Order:         order,
 			Rules:         *rule,

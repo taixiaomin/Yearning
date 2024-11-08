@@ -16,7 +16,8 @@ package login
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/ad"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"errors"
@@ -28,14 +29,15 @@ import (
 type loginForm struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	MFACode  string `json:"mfa_code"`
 }
 
 func UserLdapLogin(c yee.Context) (err error) {
 	u := new(loginForm)
 	if err = c.Bind(u); err != nil {
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
-	ldap := model.ALdap{Ldap: model.GloLdap}
+	ldap := ad.ALdap{Ldap: model.GloLdap}
 	isOk, err := ldap.LdapConnect(u.Username, u.Password, false)
 	if err != nil {
 		return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(err))
@@ -46,7 +48,7 @@ func UserLdapLogin(c yee.Context) (err error) {
 			model.DB().Create(&model.CoreAccount{
 				Username:   u.Username,
 				RealName:   ldap.RealName,
-				Password:   lib.DjangoEncrypt(lib.GenWorkid(), string(lib.GetRandom())),
+				Password:   factory.DjangoEncrypt(factory.GenWorkId(), string(factory.GetRandom())),
 				Department: ldap.Department,
 				Email:      ldap.Email,
 				IsRecorder: 2,
@@ -55,7 +57,7 @@ func UserLdapLogin(c yee.Context) (err error) {
 			model.DB().Create(&model.CoreGrained{Username: u.Username, Group: ix})
 		}
 
-		token, tokenErr := lib.JwtAuth(lib.Token{
+		token, tokenErr := factory.JwtAuth(factory.Token{
 			Username: u.Username,
 			RealName: account.RealName,
 			IsRecord: account.IsRecorder == 1,
@@ -72,22 +74,22 @@ func UserLdapLogin(c yee.Context) (err error) {
 		}
 		return c.JSON(http.StatusOK, common.SuccessPayload(dataStore))
 	}
-	return c.JSON(http.StatusOK, common.ERR_LOGIN)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(errors.New(i18n.DefaultLang.Load(i18n.ER_LOGIN))))
 }
 
 func UserGeneralLogin(c yee.Context) (err error) {
 	u := new(loginForm)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	var account model.CoreAccount
 	if err := model.DB().Where("username = ?", u.Username).First(&account).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 		if account.Username != u.Username {
-			return c.JSON(http.StatusOK, common.ERR_LOGIN)
+			return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(errors.New(i18n.DefaultLang.Load(i18n.ER_LOGIN))))
 		}
-		if e := lib.DjangoCheckPassword(&account, u.Password); e {
-			token, tokenErr := lib.JwtAuth(lib.Token{
+		if factory.DjangoCheckPassword(&account, u.Password) {
+			token, tokenErr := factory.JwtAuth(factory.Token{
 				Username: u.Username,
 				RealName: account.RealName,
 				IsRecord: account.IsRecorder == 1,
@@ -107,7 +109,7 @@ func UserGeneralLogin(c yee.Context) (err error) {
 		}
 
 	}
-	return c.JSON(http.StatusOK, common.ERR_LOGIN)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(errors.New(i18n.DefaultLang.Load(i18n.ER_LOGIN))))
 
 }
 
@@ -117,7 +119,7 @@ func UserRegister(c yee.Context) (err error) {
 		u := new(model.CoreAccount)
 		if err = c.Bind(u); err != nil {
 			c.Logger().Error(err.Error())
-			return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+			return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 		}
 		var unique model.CoreAccount
 		ix, _ := json.Marshal([]string{})
@@ -125,7 +127,7 @@ func UserRegister(c yee.Context) (err error) {
 			model.DB().Create(&model.CoreAccount{
 				Username:   u.Username,
 				RealName:   u.RealName,
-				Password:   lib.DjangoEncrypt(u.Password, string(lib.GetRandom())),
+				Password:   factory.DjangoEncrypt(u.Password, string(factory.GetRandom())),
 				Department: u.Department,
 				Email:      u.Email,
 			})
@@ -134,6 +136,6 @@ func UserRegister(c yee.Context) (err error) {
 		}
 		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_USER_ALREADY_EXISTS)))
 	}
-	return c.JSON(http.StatusOK, common.ERR_REGISTER)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_MESSAGE(errors.New(i18n.DefaultLang.Load(i18n.ER_REGISTER))))
 
 }

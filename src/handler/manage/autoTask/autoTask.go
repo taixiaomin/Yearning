@@ -25,7 +25,7 @@ func SuperFetchAutoTaskList(c yee.Context) (err error) {
 	u := new(common.PageList[[]model.CoreAutoTask])
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	return c.JSON(http.StatusOK, u.Paging().Query(common.AccordingToOrderName(u.Expr.Text)).ToMessage())
 }
@@ -40,7 +40,7 @@ func SuperAutoTaskCreateOrEdit(c yee.Context) (err error) {
 	u := new(fetchAutoTask)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	switch u.Tp {
 	case "curd":

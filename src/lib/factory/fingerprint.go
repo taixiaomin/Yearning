@@ -1,4 +1,4 @@
-package lib
+package factory
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// 以太坊密钥账户是 eth account: 0xc1912fEE45d61C87Cc5EA59DaE31190FFFFf232d 私钥
 // GetFingerprint gets mysql query fingerprint.
 // From https://github.com/bytebase/bytebase/blob/c82e4864222bb20a5e26060e1e3a28368a035c7c/backend/plugin/parser/mysql/fingerprint.go#L11
 // From https://github.com/percona/percona-toolkit/blob/af686fe186d1fca4c4392c8fa75c31a00c8fb273/bin/pt-query-digest#L2930

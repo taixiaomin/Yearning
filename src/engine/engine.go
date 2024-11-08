@@ -1,13 +1,15 @@
 package engine
 
 type AuditRole struct {
+	DMLTransaction                 bool   `json:"DMLTransaction"`    // DML语句采用事务机制执行
 	DMLAllowLimitSTMT              bool   `json:"DMLAllowLimitSTMT"` // 是否允许update/insert 语句使用limit关键字
 	DMLInsertColumns               bool   `json:"DMLInsertColumns"`  //是否检查插入语句存在列名
 	DMLMaxInsertRows               int    `json:"DMLMaxInsertRows"`  //inert语句最大多少个字段
 	DMLWhere                       bool   `json:"DMLWhere"`          //是否检查dml语句where条件
-	DMLAllowInsertNull             bool   // 允许insert语句插入Null值
+	DMLWhereExprValueIsNull        bool   //是否检查dml语句where条件值为null
 	DMLOrder                       bool   // 是否检查dml语句order条件
 	DMLSelect                      bool   //是否检查dml语句有select语句
+	DMLAllowInsertNull             bool   // 允许insert语句插入Null值
 	DMLInsertMustExplicitly        bool   //是否检查insert语句必须显式声明字段
 	DDLEnablePrimaryKey            bool   // 是否检查必须拥有主键
 	DDLCheckTableComment           bool   //是否检查表注释
@@ -35,9 +37,9 @@ type AuditRole struct {
 	DDLMultiToCommit               bool   //是否允许一个工单内有多条DDL语句
 	DDLPrimaryKeyMust              bool   //是否强制主键名为id
 	DDLAllowColumnType             bool   // ddl语句允许更改字段类型
-	DDLAllowMultiAlter             bool   // ddl语句允许多个alter语句
 	DDLImplicitTypeConversion      bool
 	DDLAllowPRINotInt              bool
+	DDLAllowMultiAlter             bool   // DDL单个工单允许多alter语句提交
 	DDLEnableForeignKey            bool   // 允许外键
 	DDLTablePrefix                 string // 指定表名前缀
 	DDLColumnsMustHaveIndex        string // 如果表包含以下列，列必须有索引。可指定多个列,以逗号分隔.列类型可选.   格式: 列名 [列类型,可选],...
@@ -49,7 +51,7 @@ type AuditRole struct {
 	AllowCreateView                bool
 	AllowCrateViewWithSelectStar   bool
 	AllowCreatePartition           bool
-	AllowSpecialType               bool
+	AllowSpecialType               bool // 是否允许特殊类型
 	PRIRollBack                    bool
 }
 

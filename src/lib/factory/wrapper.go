@@ -1,8 +1,7 @@
-package lib
+package factory
 
 import (
 	"Yearning-go/src/model"
-	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"github.com/Jeffail/gabs/v2"
@@ -28,24 +27,37 @@ func ArrayRemove(source []byte, flag string) ([]byte, error) {
 }
 
 func MultiArrayRemove(source []byte, sep []string, flag string) ([]byte, error) {
+	// 解析JSON源
 	p, err := gabs.ParseJSON(source)
 	if err != nil {
-		return nil, err
+		return nil, err // 返回解析错误
 	}
+
 	var wait sync.WaitGroup
-	wait.Add(len(sep))
+	wait.Add(len(sep)) // 设置等待组
+
 	for _, dl := range sep {
-		go func(wait *sync.WaitGroup, dl string) {
-			for i, c := range p.S(dl).Children() {
+		go func(dl string) {
+			defer wait.Done() // 确保在函数结束时调用Done
+			children := p.S(dl).Children()
+
+			// 通过切片收集待删除的索引
+			var indicesToRemove []int
+			for i, c := range children {
 				if c.Data().(string) == flag {
-					_ = p.ArrayRemove(i, dl)
+					indicesToRemove = append(indicesToRemove, i)
 				}
 			}
-			wait.Done()
-		}(&wait, dl)
+
+			// 从后向前遍历以安全删除元素
+			for i := len(indicesToRemove) - 1; i >= 0; i-- {
+				p.ArrayRemove(indicesToRemove[i], dl)
+			}
+		}(dl) // 直接传递dl，避免闭包问题
 	}
-	wait.Wait()
-	return p.EncodeJSON(), nil
+
+	wait.Wait()                // 等待所有goroutine完成
+	return p.EncodeJSON(), nil // 返回更新后的JSON
 }
 
 func GetRandom() []byte {
@@ -77,10 +89,4 @@ func DjangoCheckPassword(account *model.CoreAccount, password string) bool {
 	} else {
 		return false
 	}
-}
-
-func hmacSha256(stringToSign string, secret string) string {
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(stringToSign))
-	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }

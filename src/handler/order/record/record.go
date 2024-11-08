@@ -2,7 +2,7 @@ package record
 
 import (
 	"Yearning-go/src/handler/common"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"fmt"
@@ -17,11 +17,6 @@ type groupBy struct {
 	C    int    `json:"count"`
 	Time string `json:"time"`
 	Type string `json:"type"`
-}
-
-type count struct {
-	DDL int64 `json:"ddl"`
-	DML int64 `json:"dml"`
 }
 
 func timeAdd(add string) string {
@@ -65,7 +60,7 @@ func RecordOrderList(c yee.Context) (err error) {
 					common.AccordingToDate(u.Expr.Picker),
 					common.AccordingToText(u.Expr.Text),
 				)
-			if err = websocket.Message.Send(ws, lib.ToJson(u.ToMessage())); err != nil {
+			if err = websocket.Message.Send(ws, factory.ToJson(u.ToMessage())); err != nil {
 				c.Logger().Error(err)
 				break
 			}

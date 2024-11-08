@@ -2,17 +2,16 @@ package cmd
 
 import (
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
+	"Yearning-go/src/lib/vars"
 	"Yearning-go/src/model"
 	"Yearning-go/src/service"
 	"fmt"
 	"github.com/gookit/gcli/v3"
 	"github.com/gookit/gcli/v3/builtin"
-	"net"
 )
 
 var RunOpts = struct {
-	addr       string
 	port       string
 	config     string
 	repair     bool
@@ -55,7 +54,7 @@ var Super = &gcli.Command{
 	},
 	Func: func(c *gcli.Command, args []string) error {
 		model.DBNew(RunOpts.config)
-		model.DB().Model(model.CoreAccount{}).Where("username =?", "admin").Updates(&model.CoreAccount{Password: lib.DjangoEncrypt("Yearning_admin", string(lib.GetRandom()))})
+		model.DB().Model(model.CoreAccount{}).Where("username =?", "admin").Updates(&model.CoreAccount{Password: factory.DjangoEncrypt("Yearning_admin", string(factory.GetRandom()))})
 		fmt.Println(i18n.DefaultLang.Load(i18n.INFO_ADMIN_PASSWORD_RESET))
 		return nil
 	},
@@ -65,7 +64,6 @@ var RunServer = &gcli.Command{
 	Name: "run",
 	Desc: "启动Yearning",
 	Config: func(c *gcli.Command) {
-		c.StrOpt(&RunOpts.addr, "addr", "a", "0.0.0.0", "Yearning启动地址")
 		c.StrOpt(&RunOpts.port, "port", "p", "8000", "Yearning启动端口")
 		c.StrOpt(&RunOpts.config, "config", "c", "conf.toml", "配置文件路径")
 	},
@@ -73,14 +71,14 @@ var RunServer = &gcli.Command{
 	Func: func(c *gcli.Command, args []string) error {
 		model.DBNew(RunOpts.config)
 		service.UpdateData()
-		service.StartYearning(net.JoinHostPort(RunOpts.addr, RunOpts.port))
+		service.StartYearning(RunOpts.port)
 		return nil
 	},
 }
 
 func Command() {
 	app := gcli.NewApp()
-	app.Version = lib.Version
+	app.Version = fmt.Sprintf("%s %s", vars.Version, vars.Kind)
 	app.Name = "Yearning"
 	app.Logo = &gcli.Logo{Text: LOGO, Style: "info"}
 	app.Desc = "Yearning Mysql数据审核平台"

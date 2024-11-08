@@ -7,10 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	QUERY_EXPR = "`name` =? and source = ? and `table` =? and data_base =? and tp =?"
-)
-
 type fetchAutoTask struct {
 	Task model.CoreAutoTask `json:"task"`
 	Tp   string             `json:"tp"`

@@ -96,4 +96,5 @@ var en_US = map[int]string{
 	INFO_QUERY_AUDIT_DISABLED:                                 "Query audit is currently disabled, users can freely query",
 	ER_USER_NO_PERMISSION:                                     "User %s does not have permission for data source %s, unable to perform this operation",
 	ER_DATABASE_CONNECTION_FAILED:                             "Database connection failed",
+	ERR_FLOW_ORDER_IS_NOT_COMPLETE:                            "The workID %s is still in the \"under review\" status. Please edit this workflow after the corresponding work order has been completed.",
 }

@@ -62,9 +62,10 @@ type oidc struct {
 	UserUrl      string
 	RedirectUrL  string
 	SessionKey   string
-	UserNameKey  string
-	RealNameKey  string
-	EmailKey     string
+
+	UserNameKey string
+	RealNameKey string
+	EmailKey    string
 }
 
 type Config struct {
@@ -77,13 +78,15 @@ var C Config
 
 var DefaultLogger logger.Logger
 
+var SecretKey = ""
+
 var GloPer CoreGlobalConfiguration
 
 var GloLdap Ldap
 
-var GloOther Other
-
 var GloAI AI
+
+var GloOther Other
 
 var GloMessage Message
 

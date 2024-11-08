@@ -16,7 +16,7 @@ package service
 import (
 	"Yearning-go/src/engine"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"fmt"
@@ -145,7 +145,7 @@ func DataInit(o *engine.AuditRole, other *model.Other, ldap *model.Ldap, message
 	model.DB().Debug().Create(&model.CoreAccount{
 		Username:   "admin",
 		RealName:   "超级管理员",
-		Password:   lib.DjangoEncrypt("Yearning_admin", string(lib.GetRandom())),
+		Password:   factory.DjangoEncrypt("Yearning_admin", string(factory.GetRandom())),
 		Department: "DBA",
 		Email:      "",
 		IsRecorder: 2,
@@ -317,11 +317,15 @@ func UpdateData() {
 		_ = model.DB().Migrator().DropColumn(&model.CoreSqlOrder{}, "time")
 	}
 
+	if model.DB().Migrator().HasColumn(&model.CoreSqlOrder{}, "query_password") {
+		_ = model.DB().Migrator().DropColumn(&model.CoreSqlOrder{}, "query_password")
+	}
+
 	var config model.CoreGlobalConfiguration
 	model.DB().Model(model.CoreGlobalConfiguration{}).First(&config)
 	if config.AI == nil {
 		ai := model.AI{
-			BaseUrl:          "https://api.openai.com",
+			BaseUrl:          "https://api.openai.com/v1",
 			APIKey:           "",
 			FrequencyPenalty: 0.0,
 			MaxTokens:        0,

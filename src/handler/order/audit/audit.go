@@ -3,7 +3,9 @@ package audit
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/calls"
+	"Yearning-go/src/lib/factory"
+	"Yearning-go/src/lib/pusher"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"github.com/cookieY/yee"
@@ -18,15 +20,15 @@ const QueryField = "work_id, username, text, backup, date, real_name, `status`, 
 
 func AuditOrderState(c yee.Context) (err error) {
 	u := new(Confirm)
-	user := new(lib.Token).JwtParse(c)
+	user := new(factory.Token).JwtParse(c)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 
 	switch u.Tp {
 	case "undo":
-		lib.MessagePush(u.WorkId, 6, "")
+		pusher.NewMessagePusher(u.WorkId).Order().OrderBuild(pusher.UndoStatus).Push()
 		model.DB().Model(model.CoreSqlOrder{}).Where("work_id =?", u.WorkId).Updates(&model.CoreSqlOrder{Status: 6})
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_ORDER_IS_UNDO)))
 	case "agree":
@@ -34,7 +36,7 @@ func AuditOrderState(c yee.Context) (err error) {
 	case "reject":
 		return c.JSON(http.StatusOK, RejectOrder(u, user.Username))
 	default:
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	}
 }
 
@@ -42,10 +44,10 @@ func ScheduledChange(c yee.Context) (err error) {
 	u := new(Confirm)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	var isCall string
-	if client := lib.NewRpc(); client != nil {
+	if client := calls.NewRpc(); client != nil {
 		if err := client.Call("Engine.StopDelay", u, &isCall); err != nil {
 			return err
 		}
@@ -58,9 +60,9 @@ func DelayKill(c yee.Context) (err error) {
 	u := new(Confirm)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
-	user := new(lib.Token).JwtParse(c)
+	user := new(factory.Token).JwtParse(c)
 	model.DB().Create(&model.CoreWorkflowDetail{
 		WorkId:   u.WorkId,
 		Username: user.Username,
@@ -89,7 +91,7 @@ func FetchAuditOrder(c yee.Context) (err error) {
 				c.Logger().Error(err)
 				break
 			}
-			token, err := lib.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
+			token, err := factory.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
 			if err != nil {
 				c.Logger().Error(err)
 				break
@@ -103,7 +105,7 @@ func FetchAuditOrder(c yee.Context) (err error) {
 				common.AccordingToDate(u.Expr.Picker),
 				common.AccordingToWorkId(u.Expr.WorkId),
 			)
-			if err = websocket.Message.Send(ws, lib.ToJson(u.ToMessage())); err != nil {
+			if err = websocket.Message.Send(ws, factory.ToJson(u.ToMessage())); err != nil {
 				c.Logger().Error(err)
 				break
 			}
@@ -144,7 +146,7 @@ func AuditOrderApis(c yee.Context) (err error) {
 	case "scheduled":
 		return ScheduledChange(c)
 	default:
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	}
 }
 
@@ -155,7 +157,7 @@ func AuditOrRecordOrderFetchApis(c yee.Context) (err error) {
 	//case "record":
 	//	return FetchRecord(c)
 	default:
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	}
 }
 
@@ -168,6 +170,6 @@ func AuditFetchApis(c yee.Context) (err error) {
 	case "list":
 		return FetchAuditOrder(c)
 	default:
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	}
 }

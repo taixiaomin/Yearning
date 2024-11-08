@@ -16,7 +16,8 @@ package settings
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/ad"
+	"Yearning-go/src/lib/pusher"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"github.com/cookieY/yee"
@@ -49,7 +50,7 @@ func SuperSaveSetting(c yee.Context) (err error) {
 	u := new(set)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err)
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	other, _ := json.Marshal(u.Other)
 	message, _ := json.Marshal(u.Message)
@@ -74,18 +75,18 @@ func SuperTestSetting(c yee.Context) (err error) {
 	u := new(set)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 
 	switch el {
 	case "mail":
-		go lib.SendMail(u.Message.ToUser, u.Message, lib.TemoplateTestMail)
+		go pusher.SendMail(u.Message.ToUser, u.Message, pusher.TemoplateTestMail)
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.MAIL_TEST)))
 	case "ding":
-		go lib.SendDingMsg(u.Message, lib.Commontext)
+		go pusher.PusherMessages(u.Message, pusher.Commontext)
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.WEBHOOK_TEST)))
 	case "ldap":
-		ldap := model.ALdap{Ldap: u.Ldap}
+		ldap := ad.ALdap{Ldap: u.Ldap}
 		k, err := ldap.LdapConnect("", "", true)
 		if err != nil {
 			c.Logger().Error(err)
@@ -95,14 +96,14 @@ func SuperTestSetting(c yee.Context) (err error) {
 			return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.SUCCESS_LDAP_TEST)))
 		}
 	}
-	return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+	return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 }
 
 func SuperDelOrder(c yee.Context) (err error) {
 	u := new(delOrder)
 	if err := c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 
 	if u.Tp {

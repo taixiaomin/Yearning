@@ -4,7 +4,8 @@ import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/handler/fetch"
 	"Yearning-go/src/handler/personal"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/i18n"
+	"Yearning-go/src/lib/factory"
 	"github.com/cookieY/yee"
 	"net/http"
 )
@@ -28,12 +29,12 @@ func YearningQueryForPut(y yee.Context) (err error) {
 	case "merge":
 		return fetch.FetchMergeDDL(y)
 	}
-	return y.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+	return y.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 }
 
 func YearningQueryForPost(y yee.Context) (err error) {
 	tp := y.Params("tp")
-	user := new(lib.Token).JwtParse(y)
+	user := new(factory.Token).JwtParse(y)
 	switch tp {
 	case "post":
 		return personal.ReferQueryOrder(y, user)

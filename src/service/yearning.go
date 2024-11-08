@@ -68,6 +68,6 @@ func StartYearning(port string) {
 		return c.HTML(http.StatusOK, html)
 	})
 	router.AddRouter(e)
-
-	e.Run(fmt.Sprintf("%s", port))
+	fmt.Println("Yearning is running on port: ", port)
+	e.Run(fmt.Sprintf(":%s", port))
 }

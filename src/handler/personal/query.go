@@ -16,11 +16,13 @@ package personal
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
 	"Yearning-go/src/lib/enc"
+	"Yearning-go/src/lib/factory"
+	"Yearning-go/src/lib/permission"
+	"Yearning-go/src/lib/pusher"
+	"Yearning-go/src/lib/vars"
 	"Yearning-go/src/model"
 	"errors"
-	"fmt"
 	"github.com/cookieY/sqlx"
 	"github.com/cookieY/yee"
 	"github.com/golang-jwt/jwt"
@@ -60,16 +62,16 @@ func reflect(flag bool) uint {
 	return 0
 }
 
-func ReferQueryOrder(c yee.Context, user *lib.Token) (err error) {
+func ReferQueryOrder(c yee.Context, user *factory.Token) (err error) {
 	var t model.CoreQueryOrder
 	d := new(common.QueryOrder)
 	if err = c.Bind(d); err != nil {
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
-	work := lib.GenWorkid()
+	workID := factory.GenWorkId()
 	if !model.GloOther.Query {
 		model.DB().Create(&model.CoreQueryOrder{
-			WorkId:       work,
+			WorkId:       workID,
 			Username:     user.Username,
 			Date:         time.Now().Format("2006-01-02 15:04"),
 			Export:       reflect(model.GloOther.Export),
@@ -86,7 +88,7 @@ func ReferQueryOrder(c yee.Context, user *lib.Token) (err error) {
 		var principal model.CoreDataSource
 		model.DB().Model(model.CoreDataSource{}).Where("source_id = ?", d.SourceId).First(&principal)
 		model.DB().Create(&model.CoreQueryOrder{
-			WorkId:   work,
+			WorkId:   workID,
 			Username: user.Username,
 			Date:     time.Now().Format("2006-01-02 15:04"),
 			Text:     d.Text,
@@ -96,7 +98,7 @@ func ReferQueryOrder(c yee.Context, user *lib.Token) (err error) {
 			Assigned: principal.Principal,
 			RealName: user.RealName,
 		})
-		lib.MessagePush(work, 7, "")
+		pusher.NewMessagePusher(workID).Query().QueryBuild(pusher.SummitStatus).Push()
 		return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_ORDER_IS_CREATE)))
 	}
 	return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_ORDER_IS_DUP)))
@@ -144,14 +146,24 @@ func SocketQueryResults(c yee.Context) (err error) {
 	websocket.Handler(func(ws *websocket.Conn) {
 		defer ws.Close()
 		var b []byte
-		token, err := lib.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
+		token, err := factory.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
 		if err != nil {
 			c.Logger().Error(err)
 			return
 		}
 		user := token.Claims.(jwt.MapClaims)["name"].(string)
-		control := lib.SourceControl{User: user, Kind: lib.QUERY, SourceId: args.SourceId}
-		if !control.Equal() {
+
+		// 开启查询审核模式后需判断当前连接的 sourceID用户是否有权限
+		if model.GloOther.Query {
+			var queryPerm model.CoreQueryOrder
+			model.DB().Model(model.CoreQueryOrder{}).Where("username =? AND status =?", user, 2).Last(&queryPerm)
+			if queryPerm.SourceId != args.SourceId {
+				c.Logger().Criticalf(i18n.DefaultLang.Load(i18n.ER_USER_NO_PERMISSION), user, args.SourceId)
+				return
+			}
+		}
+
+		if !permission.NewPermissionService(model.DB()).Equal(&permission.Control{User: user, Kind: vars.QUERY, SourceId: args.SourceId}) {
 			c.Logger().Criticalf(i18n.DefaultLang.Load(i18n.ER_USER_NO_PERMISSION), user, args.SourceId)
 			return
 		}
@@ -161,10 +173,24 @@ func SocketQueryResults(c yee.Context) (err error) {
 			core := new(queryCore)
 			var u model.CoreDataSource
 			model.DB().Where("source_id =?", args.SourceId).First(&u)
-			core.db, err = sqlx.Connect("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4", u.Username, enc.Decrypt(model.C.General.SecretKey, u.Password), u.IP, u.Port))
+			dsn, err := model.InitDSN(model.DSN{
+				Username: u.Username,
+				Password: enc.Decrypt(model.C.General.SecretKey, u.Password),
+				Host:     u.IP,
+				Port:     u.Port,
+				CA:       u.CAFile,
+				Cert:     u.Cert,
+				Key:      u.KeyFile,
+			})
 			if err != nil {
 				c.Logger().Error(err)
-				_ = websocket.Message.Send(ws, lib.ToMsg(queryResults{Error: err.Error()}))
+				_ = websocket.Message.Send(ws, factory.ToMsg(queryResults{Error: err.Error()}))
+				return
+			}
+			core.db, err = sqlx.Connect("mysql", dsn)
+			if err != nil {
+				c.Logger().Error(err)
+				_ = websocket.Message.Send(ws, factory.ToMsg(queryResults{Error: err.Error()}))
 				return
 			}
 			core.insulateWordList = u.InsulateWordList
@@ -178,7 +204,7 @@ func SocketQueryResults(c yee.Context) (err error) {
 					break
 				}
 				if string(b) == "ping" {
-					_ = websocket.Message.Send(ws, lib.ToMsg(queryResults{HeartBeat: common.Pong, IsOnly: model.GloOther.Query}))
+					_ = websocket.Message.Send(ws, factory.ToMsg(queryResults{HeartBeat: common.Pong, IsOnly: model.GloOther.Query}))
 					continue
 				}
 				if err := msgpack.Unmarshal(b, &msg.Ref); err != nil {
@@ -189,15 +215,15 @@ func SocketQueryResults(c yee.Context) (err error) {
 				msg.MultiSQLRunner = []MultiSQLRunner{}
 				clock := time.Now()
 				if err := model.DB().Where("username =? AND status =?", user, 2).Last(&d).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-					if err := websocket.Message.Send(ws, lib.ToMsg(queryResults{Status: true})); err != nil {
+					if err := websocket.Message.Send(ws, factory.ToMsg(queryResults{Status: true})); err != nil {
 						c.Logger().Error(err)
 					}
 					continue
 				}
 
-				if lib.TimeDifference(d.ApprovalTime) {
+				if factory.TimeDifference(d.ApprovalTime) {
 					model.DB().Model(model.CoreQueryOrder{}).Where("username =?", user).Updates(&model.CoreQueryOrder{Status: 3})
-					if err := websocket.Message.Send(ws, lib.ToMsg(queryResults{Status: true})); err != nil {
+					if err := websocket.Message.Send(ws, factory.ToMsg(queryResults{Status: true})); err != nil {
 						c.Logger().Error(err)
 					}
 					continue
@@ -206,7 +232,7 @@ func SocketQueryResults(c yee.Context) (err error) {
 				var queryData []*Query
 
 				if err := msg.PreCheck(core.insulateWordList); err != nil {
-					if err := websocket.Message.Send(ws, lib.ToMsg(queryResults{Error: err.Error()})); err != nil {
+					if err := websocket.Message.Send(ws, factory.ToMsg(queryResults{Error: err.Error()})); err != nil {
 						c.Logger().Error(err)
 					}
 					continue
@@ -215,7 +241,7 @@ func SocketQueryResults(c yee.Context) (err error) {
 				for _, i := range msg.MultiSQLRunner {
 					result, err := i.Run(core.db, msg.Ref.Schema)
 					if err != nil {
-						if err := websocket.Message.Send(ws, lib.ToMsg(queryResults{Error: err.Error()})); err != nil {
+						if err := websocket.Message.Send(ws, factory.ToMsg(queryResults{Error: err.Error()})); err != nil {
 							c.Logger().Error(err)
 						}
 						continue
@@ -228,7 +254,7 @@ func SocketQueryResults(c yee.Context) (err error) {
 				go func(w string, s string, ex int) {
 					model.DB().Create(&model.CoreQueryRecord{SQL: s, WorkId: w, ExTime: ex, Time: time.Now().Format("2006-01-02 15:04"), Source: core.source, Schema: msg.Ref.Schema})
 				}(d.WorkId, msg.Ref.Sql, queryTime)
-				if err := websocket.Message.Send(ws, lib.ToMsg(queryResults{Export: d.Export == 1, Results: queryData, QueryTime: queryTime})); err != nil {
+				if err := websocket.Message.Send(ws, factory.ToMsg(queryResults{Export: d.Export == 1, Results: queryData, QueryTime: queryTime})); err != nil {
 					c.Logger().Error(err)
 				}
 			}
@@ -239,7 +265,7 @@ func SocketQueryResults(c yee.Context) (err error) {
 }
 
 func UndoQueryOrder(c yee.Context) (err error) {
-	user := new(lib.Token).JwtParse(c)
+	user := new(factory.Token).JwtParse(c)
 	model.DB().Model(model.CoreQueryOrder{}).Where("username =?", user.Username).Updates(map[string]interface{}{"status": 3})
 	return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_ORDER_IS_END)))
 }

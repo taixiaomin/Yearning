@@ -1,4 +1,4 @@
-package tpl
+package flow
 
 import (
 	"Yearning-go/src/i18n"
@@ -37,4 +37,14 @@ func OrderRelation(source_id string) ([]Tpl, error) {
 	_ = json.Unmarshal(tpl.Steps, &whoIsAuditor)
 
 	return whoIsAuditor, nil
+}
+
+func checkFlowOrderCompletion() []string {
+	var orders []model.CoreSqlOrder
+	model.DB().Model(model.CoreSqlOrder{}).Select("work_id").Where("`status` =?", 2).Find(&orders)
+	var wrapper []string
+	for _, i := range orders {
+		wrapper = append(wrapper, i.WorkId)
+	}
+	return wrapper
 }

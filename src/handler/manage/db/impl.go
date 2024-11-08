@@ -3,8 +3,8 @@ package db
 import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
 	"Yearning-go/src/lib/enc"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"github.com/google/uuid"
@@ -47,7 +47,6 @@ func ConnTest(u *model.CoreDataSource) error {
 }
 
 func SuperEditSource(source *model.CoreDataSource) common.Resp {
-
 	if source.Password != "" && enc.Decrypt(model.C.General.SecretKey, source.Password) == "" {
 		model.DB().Model(&model.CoreDataSource{}).Where("source_id =?", source.SourceId).Updates(&model.CoreDataSource{Password: enc.Encrypt(model.C.General.SecretKey, source.Password)})
 	}
@@ -76,11 +75,11 @@ func SuperEditSource(source *model.CoreDataSource) common.Resp {
 			return common.ERR_COMMON_MESSAGE(err)
 		}
 		if source.IsQuery == 0 {
-			p.QuerySource = lib.ResearchDel(p.QuerySource, source.Source)
+			p.QuerySource = factory.RemoveString(p.QuerySource, source.Source)
 		}
 		if source.IsQuery == 1 {
-			p.DDLSource = lib.ResearchDel(p.DDLSource, source.Source)
-			p.DMLSource = lib.ResearchDel(p.DMLSource, source.Source)
+			p.DDLSource = factory.RemoveString(p.DDLSource, source.Source)
+			p.DMLSource = factory.RemoveString(p.DMLSource, source.Source)
 		}
 		r, _ := json.Marshal(p)
 		model.DB().Model(&model.CoreRoleGroup{}).Where("id =?", k[i].ID).Updates(model.CoreRoleGroup{Permissions: r})

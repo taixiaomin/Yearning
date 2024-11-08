@@ -4,7 +4,8 @@ import (
 	"Yearning-go/src/handler/common"
 	"Yearning-go/src/handler/order/audit"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
+	"Yearning-go/src/lib/pusher"
 	"Yearning-go/src/model"
 	"encoding/json"
 	"errors"
@@ -36,7 +37,7 @@ func FetchQueryOrder(c yee.Context) (err error) {
 				c.Logger().Error(err)
 				break
 			}
-			token, err := lib.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
+			token, err := factory.WsTokenParse(ws.Request().Header.Get("Sec-WebSocket-Protocol"))
 			if err != nil {
 				c.Logger().Error(err)
 				break
@@ -52,7 +53,7 @@ func FetchQueryOrder(c yee.Context) (err error) {
 				common.AccordingToWorkId(u.Expr.WorkId),
 				common.AccordingToAllQueryOrderState(u.Expr.Status),
 			)
-			if err = websocket.Message.Send(ws, lib.ToJson(u.ToMessage())); err != nil {
+			if err = websocket.Message.Send(ws, factory.ToJson(u.ToMessage())); err != nil {
 				c.Logger().Error(err)
 				break
 			}
@@ -66,7 +67,7 @@ func FetchQueryRecordProfile(c yee.Context) (err error) {
 	if err = c.Bind(u); err != nil {
 		return
 	}
-	start, end := lib.Paging(u.Page, 15)
+	start, end := factory.Paging(u.Page, 15)
 	l := new(common.GeneralList[[]model.CoreQueryRecord])
 	model.DB().Model(&model.CoreQueryRecord{}).Where("work_id =?", u.WorkId).Count(&l.Page).Offset(start).Limit(end).Find(&l.Data)
 	return c.JSON(http.StatusOK, l.ToMessage())
@@ -88,28 +89,28 @@ func QueryHandlerSets(c yee.Context) (err error) {
 	u := new(common.QueryOrder)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
-	token := new(lib.Token).JwtParse(c)
+	token := new(factory.Token).JwtParse(c)
 	empty := new(model.CoreQueryOrder)
 	found := model.DB().Where("work_id=? AND status=? AND assigned = ?", u.WorkId, 1, token.Username).Find(empty).Error
 	switch c.Params("tp") {
 	case "agreed":
 		if !errors.Is(found, gorm.ErrRecordNotFound) {
 			model.DB().Model(model.CoreQueryOrder{}).Where("work_id =?", u.WorkId).Updates(&model.CoreQueryOrder{Status: 2, ApprovalTime: time.Now().Format("2006-01-02 15:04")})
-			lib.MessagePush(u.WorkId, 8, "")
+			pusher.NewMessagePusher(u.WorkId).Query().QueryBuild(pusher.AgreeStatus).Push()
 			return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_ORDER_IS_AGREE)))
 		}
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	case "reject":
 		if !errors.Is(found, gorm.ErrRecordNotFound) {
 			model.DB().Model(model.CoreQueryOrder{}).Where("work_id =?", u.WorkId).Updates(&model.CoreQueryOrder{Status: 4})
-			lib.MessagePush(u.WorkId, 9, "")
+			pusher.NewMessagePusher(u.WorkId).Query().QueryBuild(pusher.RejectStatus).Push()
 			return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_ORDER_IS_REJECT)))
 		}
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	case "undo":
-		t := new(lib.Token)
+		t := new(factory.Token)
 		t.JwtParse(c)
 		var order model.CoreQueryOrder
 		model.DB().Model(model.CoreQueryOrder{}).Select("work_id").Where("username =?", t.Username).Last(&order)
@@ -131,7 +132,7 @@ func AuditQueryOrderProfileFetchApis(c yee.Context) (err error) {
 	case "profile":
 		return FetchQueryRecordProfile(c)
 	default:
-		return c.JSON(http.StatusOK, common.ERR_REQ_FAKE)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_FAKE)))
 	}
 }
 

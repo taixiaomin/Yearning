@@ -3,25 +3,25 @@ package personal
 import (
 	"Yearning-go/src/engine"
 	"Yearning-go/src/i18n"
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/calls"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/cookieY/sqlx"
+	"github.com/cookieY/yee/logger"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 const (
-	BUF    = 1<<20 - 1
-	ER_RPC = "rpc调用失败"
+	BUF = 1<<20 - 1
 )
 
-type queryBind struct {
-	Table    string `json:"table"`
-	DataBase string `json:"data_base"`
-	Source   string `json:"source"`
+func bytesToString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
 }
 
 type QueryDeal struct {
@@ -29,7 +29,7 @@ type QueryDeal struct {
 		Type     int    `msgpack:"type"` //0 conn 1 close
 		Sql      string `msgpack:"sql"`
 		Schema   string `msgpack:"schema"`
-		SourceId string `msgpack:"source_id"`
+		SourceId string `json:"source_id"`
 	}
 	MultiSQLRunner []MultiSQLRunner
 }
@@ -43,7 +43,6 @@ type Query struct {
 	Field []map[string]interface{} `msgpack:"field"`
 	Data  []map[string]interface{} `msgpack:"data"`
 }
-
 type QueryArgs struct {
 	SQL              string
 	Limit            uint64
@@ -52,7 +51,7 @@ type QueryArgs struct {
 
 func (q *QueryDeal) PreCheck(insulateWordList string) error {
 	var rs []engine.Record
-	if client := lib.NewRpc(); client != nil {
+	if client := calls.NewRpc(); client != nil {
 		if err := client.Call("Engine.Query", &QueryArgs{
 			SQL:              q.Ref.Sql,
 			Limit:            model.GloOther.Limit,
@@ -64,11 +63,11 @@ func (q *QueryDeal) PreCheck(insulateWordList string) error {
 			if i.Error != "" {
 				return errors.New(i.Error)
 			}
-			q.MultiSQLRunner = append(q.MultiSQLRunner, MultiSQLRunner{SQL: i.SQL, InsulateWordList: lib.MapOn(i.InsulateWordList)})
+			q.MultiSQLRunner = append(q.MultiSQLRunner, MultiSQLRunner{SQL: i.SQL, InsulateWordList: factory.MapOn(i.InsulateWordList)})
 		}
 		return nil
 	}
-	return errors.New(ER_RPC)
+	return errors.New("client is nil")
 }
 
 func (m *MultiSQLRunner) Run(db *sqlx.DB, schema string) (*Query, error) {
@@ -76,7 +75,10 @@ func (m *MultiSQLRunner) Run(db *sqlx.DB, schema string) (*Query, error) {
 	if db == nil {
 		return nil, errors.New(i18n.DefaultLang.Load(i18n.ER_DATABASE_CONNECTION_FAILED))
 	}
-	db.Exec(fmt.Sprintf("use `%s`", schema))
+	_, err := db.Exec(fmt.Sprintf("use `%s`", schema))
+	if err != nil {
+		logger.LogCreator().Error(err)
+	}
 	rows, err := db.Queryx(m.SQL)
 
 	if err != nil {
@@ -104,7 +106,7 @@ func (m *MultiSQLRunner) Run(db *sqlx.DB, schema string) (*Query, error) {
 					case "00":
 						results[key] = "false"
 					default:
-						results[key] = string(r)
+						results[key] = bytesToString(r)
 					}
 					if m.excludeFieldContext(key) {
 						results[key] = i18n.DefaultLang.Load(i18n.INFO_SENSITIVE_FIELD)
@@ -116,7 +118,12 @@ func (m *MultiSQLRunner) Run(db *sqlx.DB, schema string) (*Query, error) {
 				} else {
 					results[key] = strconv.FormatInt(r, 10)
 				}
-
+			case uint64:
+				if m.excludeFieldContext(key) {
+					results[key] = i18n.DefaultLang.Load(i18n.INFO_SENSITIVE_FIELD)
+				} else {
+					results[key] = strconv.FormatUint(r, 10)
+				}
 			}
 		}
 		query.Data = append(query.Data, results)
@@ -128,7 +135,6 @@ func (m *MultiSQLRunner) Run(db *sqlx.DB, schema string) (*Query, error) {
 		query.Field = append(query.Field, map[string]interface{}{"title": ele[cv], "dataIndex": ele[cv], "width": 200, "resizable": true, "ellipsis": true})
 	}
 	query.Field[0]["fixed"] = "left"
-
 	return query, nil
 }
 

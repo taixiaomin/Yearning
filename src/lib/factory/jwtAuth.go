@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lib
+package factory
 
 import (
 	"Yearning-go/src/model"
@@ -50,11 +50,8 @@ func (h *Token) JwtParse(c yee.Context) *Token {
 	return h
 }
 
-func WSTokenIsValid(token string) (bool, error) {
-	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		return []byte(model.C.General.SecretKey), nil
-	})
-	return t.Valid, err
+func (h *Token) IsAdmin() bool {
+	return h.Username == "admin"
 }
 
 func WsTokenParse(token string) (*jwt.Token, error) {

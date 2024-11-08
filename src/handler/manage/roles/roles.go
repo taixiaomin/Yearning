@@ -16,7 +16,7 @@ func SuperSaveRoles(c yee.Context) (err error) {
 
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	audit, _ := json.Marshal(u)
 	model.DB().Model(model.CoreGlobalConfiguration{}).Where("1=1").Updates(&model.CoreGlobalConfiguration{AuditRole: audit})
@@ -40,7 +40,7 @@ func SuperRolesAdd(c yee.Context) (err error) {
 	u := new(model.CoreRules)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	model.DB().Create(u)
 	return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_RULE_IS_ADD)))
@@ -50,7 +50,7 @@ func SuperRoleDelete(c yee.Context) (err error) {
 	u := new(model.CoreRules)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	model.DB().Model(model.CoreRules{}).Where("id =?", u.ID).Delete(&model.CoreRules{})
 	return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.RULE_IS_DELETE)))
@@ -60,7 +60,7 @@ func SuperRoleUpdate(c yee.Context) (err error) {
 	u := new(model.CoreRules)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	model.DB().Model(model.CoreRules{}).Where("id =?", u.ID).Updates(&model.CoreRules{AuditRole: u.AuditRole, Desc: u.Desc})
 	return c.JSON(http.StatusOK, common.SuccessPayLoadToMessage(i18n.DefaultLang.Load(i18n.INFO_RULE_IS_UPDATED)))
@@ -70,7 +70,7 @@ func SuperRoleProfile(c yee.Context) (err error) {
 	u := new(model.CoreRules)
 	if err = c.Bind(u); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, common.ERR_REQ_BIND)
+		return c.JSON(http.StatusOK, common.ERR_COMMON_TEXT_MESSAGE(i18n.DefaultLang.Load(i18n.ER_REQ_BIND)))
 	}
 	var rule model.CoreRules
 	model.DB().Model(model.CoreRules{}).Where("id =?", u.ID).Find(&rule)

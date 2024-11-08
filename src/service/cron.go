@@ -1,7 +1,7 @@
 package service
 
 import (
-	"Yearning-go/src/lib"
+	"Yearning-go/src/lib/factory"
 	"Yearning-go/src/model"
 	"github.com/cookieY/yee/logger"
 	"github.com/robfig/cron/v3"
@@ -14,7 +14,7 @@ func cronTabMaskQuery() {
 		var queryOrder []model.CoreQueryOrder
 		model.DB().Model(model.CoreQueryOrder{}).Where("`status` =?", 2).Find(&queryOrder)
 		for _, i := range queryOrder {
-			if lib.TimeDifference(i.ApprovalTime) {
+			if factory.TimeDifference(i.ApprovalTime) {
 				model.DB().Model(model.CoreQueryOrder{}).Where("work_id =?", i.WorkId).Updates(&model.CoreQueryOrder{Status: 3})
 			}
 		}
