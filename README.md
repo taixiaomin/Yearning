@@ -15,6 +15,7 @@
 [![][github-forks-shield]][github-forks-link]
 [![][github-stars-shield]][github-stars-link]
 [![Downloads](https://img.shields.io/github/downloads/cookieY/Yearning/total?labelColor=black&logo=download&logoColor=white&style=flat-square)](https://github.com/cookieY/Yearning/releases/latest)
+[<img src="https://api.gitsponsors.com/api/badge/img?id=107417113" height="20">](https://api.gitsponsors.com/api/badge/link?p=d/F0Db/twPG+6OzJf1gggT3gVxyk4IxigSNtepS5PignTU8DHkBmS8WW+XF7YPkH/n8fYh1rInOyZZ+hE/5xyKjWAyoHET28uOe3fd9Zp649KM+pW4S+HSzrA+qHXmhwoFH2pkphMvjDsjE+EihVZA==)
 
 English | [简体中文](README.zh-CN.md)
 
