@@ -16,7 +16,7 @@
 [![][github-stars-shield]][github-stars-link]
 [![Downloads](https://img.shields.io/github/downloads/cookieY/Yearning/total?labelColor=black&logo=download&logoColor=white&style=flat-square)](https://github.com/cookieY/Yearning/releases/latest)
 
-English | [简体中文](README.zh-CN.md)
+English | [简体中文](README.zh-CN.md) | [日本語](README.ja-JP.md)
 
 ## ✨ Features
 

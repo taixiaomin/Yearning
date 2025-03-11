@@ -17,7 +17,7 @@
 [![下载次数](https://img.shields.io/github/downloads/cookieY/Yearning/total?labelColor=black&logo=download&logoColor=white&style=flat-square)](https://github.com/cookieY/Yearning/releases/latest)
 
 
-[英文](README.md) | 简体中文
+[英文](README.md) | 简体中文 | [日本語](README.ja-JP.md)
 
 ## ✨ 功能
 
